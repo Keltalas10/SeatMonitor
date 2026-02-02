@@ -1,0 +1,151 @@
+openapi: 3.0.0
+info:
+  title: Seat Monitor API
+  version: 1.0.0
+  description: API для Chrome Extension Seat Monitor
+paths:
+  /register:
+    post:
+      summary: Регистрация устройства по UUID
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceUUID
+              properties:
+                deviceUUID:
+                  type: string
+                  format: uuid
+                  description: UUID устройства
+      responses:
+        '200':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deviceUUID:
+                    type: string
+                  subscriptionEndDate:
+                    type: string
+                    nullable: true
+                  token:
+                    type: string
+        '400':
+          description: Ошибка валидации
+        '500':
+          description: Внутренняя ошибка сервера
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: <FUNCTION_ID_REGISTER>
+        service_account_id: <SERVICE_ACCOUNT_ID>
+    options:
+      summary: CORS preflight для регистрации
+      responses:
+        '200':
+          description: Успешный ответ на preflight запрос
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+                example: 'POST, OPTIONS'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                example: 'Content-Type'
+            Access-Control-Max-Age:
+              schema:
+                type: string
+                example: '86400'
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: '*'
+          Access-Control-Allow-Methods: 'POST, OPTIONS, GET'
+          Access-Control-Allow-Headers: 'Content-Type, Authorization'
+          Access-Control-Max-Age: '86400'
+  /login:
+    post:
+      summary: Вход устройства по UUID
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceUUID
+              properties:
+                deviceUUID:
+                  type: string
+                  format: uuid
+                  description: UUID устройства
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deviceUUID:
+                    type: string
+                  subscriptionEndDate:
+                    type: string
+                    nullable: true
+                  token:
+                    type: string
+        '400':
+          description: Ошибка валидации
+        '500':
+          description: Внутренняя ошибка сервера
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: <FUNCTION_ID_LOGIN>
+        service_account_id: <SERVICE_ACCOUNT_ID>
+    options:
+      summary: CORS preflight для входа
+      responses:
+        '200':
+          description: Успешный ответ на preflight запрос
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+                example: 'POST, OPTIONS'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                example: 'Content-Type'
+            Access-Control-Max-Age:
+              schema:
+                type: string
+                example: '86400'
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: '*'
+          Access-Control-Allow-Methods: 'POST, OPTIONS, GET'
+          Access-Control-Allow-Headers: 'Content-Type, Authorization'
+          Access-Control-Max-Age: '86400'
+

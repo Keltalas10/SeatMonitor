@@ -1,0 +1,17 @@
+*.suo
+*.user
+*.sln.docstates
+
+# Build results
+
+[Dd]ebug/
+[Rr]elease/
+x64/
+[Bb]in/
+[Oo]bj/
+
+packages/
+.vs/
+/.vscode
+/Config/Screens
+/YandexCloud/seat-monitor-functions/node_modules
