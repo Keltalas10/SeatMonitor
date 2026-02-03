@@ -3,6 +3,7 @@
 const SeatMonitor = {
   monitoringInterval: null, // ID интервала мониторинга
   mutationObserver: null, // Наблюдатель за изменениями DOM
+  monitoringStatus: null,
   // Отслеживаемые места для режима target-players (playerId -> { parentSelector, index })
 
   /**
@@ -55,6 +56,7 @@ const SeatMonitor = {
         this.checkElements();
       }
     }, SeatMonitorConfig.checkInterval);
+    this._monitoring(SeatMonitorConfig.isSeat);
   },
 
   /**
@@ -78,7 +80,7 @@ const SeatMonitor = {
 
     // Отключаем мониторинг в конфиге
     SeatMonitorConfig.enabled = false;
-
+    this._closeMonitoringStatus();
     if (SeatMonitorConfig.logActions) {
       console.log('[Seat Monitor] Мониторинг остановлен');
     }
@@ -105,7 +107,7 @@ const SeatMonitor = {
       }
     }
   },
- // Множество уже обработанных элементов
+  // Множество уже обработанных элементов
 
   /**
    * Обрабатывает один элемент
@@ -124,10 +126,15 @@ const SeatMonitor = {
       // После успешного клика обрабатываем popup
       this._logElementClicked();
       // Обрабатываем popup после клика на seat
+      if (!SeatMonitorConfig.isSeat) {
+        this.stop();
+        this._notifyElementClicked(false);
+        return;
+      }
       PopupHandler.handlePopupAfterSeatClick(SeatMonitorConfig.logActions)
         .then(() => {
           this.stop();
-          this._notifyElementClicked();
+          this._notifyElementClicked(true);
         })
         .catch((e) => {
           if (SeatMonitorConfig.logActions) {
@@ -137,7 +144,7 @@ const SeatMonitor = {
         });
 
       return; // Выходим, так как мониторинг будет остановлен
-    } 
+    }
   },
 
   /**
@@ -156,54 +163,111 @@ const SeatMonitor = {
    * Показывает popup с сообщением о занятии места
    * @private
    */
- _notifyElementClicked() {
-  // Создаем полноэкранный overlay
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 999999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 1;
-  `;
+  _notifyElementClicked(isSeat) {
+    // Создаем полноэкранный overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 999999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 1;
+    `;
 
-  // Создаем popup окно
-  const popup = document.createElement('div');
-  popup.style.cssText = `
-    background-color: #28a745;
-    color: white;
-    padding: 40px 60px;
-    border-radius: 10px;
-    font-size: 32px;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-  `;
-  popup.textContent = '✅ Занято место!';
+    // Создаем popup окно
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      background-color: #28a745;
+      color: white;
+      padding: 40px 60px;
+      border-radius: 10px;
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    `;
+    popup.textContent = isSeat ? '✅ Занято место!' : '✅ Найдено место!';
 
-  overlay.appendChild(popup);
-  document.body.appendChild(overlay);
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
 
-  // Функция для закрытия (объявляем ДО использования)
-  const closeOverlay = () => {
-    if (overlay.parentNode) {
-      overlay.parentNode.removeChild(overlay);
-    }
-  };
+    // Функция для закрытия
+    const closeOverlay = () => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    };
 
-  // Закрываем по клику на overlay или popup
-  overlay.addEventListener('click', closeOverlay);
-  popup.addEventListener('click', closeOverlay);
+    // Закрываем по клику на overlay
+    overlay.addEventListener('click', closeOverlay);
 
-},
+    // Останавливаем всплытие клика на popup
+    popup.addEventListener('click', (event) => {
+      event.stopPropagation();
+      closeOverlay();
+    });
 
+  },
+
+  _monitoring(isSeat) {
+    // Создаем overlay для popup (прозрачный фон для позиционирования)
+    const popupOverlay = document.createElement('div');
+
+    // Стили overlay - только для позиционирования
+    Object.assign(popupOverlay.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      zIndex: '2147483647', // Максимальный z-index
+      pointerEvents: 'none' // Пропускаем клики сквозь
+    });
+
+    // Создаем сам popup
+    const popup = document.createElement('div');
+
+    // Стили popup
+    Object.assign(popup.style, {
+      backgroundColor: isSeat ? '#28a745' : '#ffc107',
+      color: isSeat ? 'white' : '#212529',
+      padding: '5px',
+      borderRadius: '10px',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      textAlign: 'center',
+      boxShadow: '0 6px 25px rgba(0, 0, 0, 0.3)',
+      pointerEvents: 'auto', // Включаем клики для popup
+      cursor: 'pointer',
+      maxWidth: '350px',
+      wordBreak: 'break-word',
+      border: '2px solid ' + (isSeat ? '#1e7e34' : '#e0a800'),
+      animation: 'fadeIn 0.3s ease'
+    });
+
+    popup.textContent = '✅ Мониторинг включен';
+
+    // Собираем структуру
+    popupOverlay.appendChild(popup);
+    document.body.appendChild(popupOverlay);
+
+    // Сохраняем ссылку если нужно управлять извне
+    this.monitoringStatus = popupOverlay;
+  },
+
+  // Функция для закрытия
+  _closeMonitoringStatus() {
+    setTimeout(() => {
+      if (this.monitoringStatus.parentNode) {
+        this.monitoringStatus.parentNode.removeChild(this.monitoringStatus);
+      }
+    }, 300);
+  },
   /**
    * Получает статистику
    * @returns {Object} Статистика мониторинга

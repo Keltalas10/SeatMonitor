@@ -34,10 +34,13 @@ const MessageHandler = {
           this._handleSetTargetColor(request.color, sendResponse);
           break;
         case 'setTargetColors':
-            this._handleSetTargetColors(request.colors, sendResponse);
+          this._handleSetTargetColors(request.colors, sendResponse);
           break;
         case 'setCheckInterval':
           this._handleSetCheckInterval(request.interval, sendResponse);
+          break;
+        case 'setIsSeat':
+          this._handleSetIsSeat(request.checked, sendResponse);
           break;
         default:
           console.log('[MessageHandler] Неизвестное действие:', request.action);
@@ -102,9 +105,6 @@ const MessageHandler = {
     if (SeatMonitorConfig.logActions) {
       console.log(`[Seat Monitor] Мониторинг включен`);
     }
-
-    // Запускаем мониторинг
-    SeatMonitor.stop(); // Останавливаем старый, если был запущен
     SeatMonitor.start(); // Запускаем заново
 
     sendResponse({ enabled: true });
@@ -307,17 +307,17 @@ const MessageHandler = {
     sendResponse({ success: true, color: color });
   },
 
-    /**
-   * Обрабатывает изменение цвета для целевых игроков
-   * @private
-   */
+  /**
+ * Обрабатывает изменение цвета для целевых игроков
+ * @private
+ */
   async _handleSetTargetColors(colors, sendResponse) {
     if (!colors) {
       sendResponse({ success: false, error: 'Цвет не указан' });
       return;
     }
 
-    SeatMonitorConfig.selectedTargetColors = new Set([... colors]);
+    SeatMonitorConfig.selectedTargetColors = new Set([...colors]);
 
     sendResponse({ success: true, color: colors });
   },
@@ -352,6 +352,16 @@ const MessageHandler = {
     }
 
     sendResponse({ success: true, interval: interval });
+  },
+
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
+  async _handleSetIsSeat(checked, sendResponse) {
+
+    SeatMonitorConfig.isSeat = checked;
+    sendResponse({ success: true, checked: checked });
   }
 };
 

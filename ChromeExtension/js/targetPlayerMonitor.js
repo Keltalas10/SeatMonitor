@@ -1,5 +1,5 @@
 const TargetPlayerMonitor = {
-  trackedSeats: new Set(), // Set строк вида "${parentSelector}:${index}"
+  trackedSeats: new Map(), // Set строк вида "${parentSelector}:${index}"
 
   checkTargetPlayers() {
     if (SeatMonitorConfig.logActions) {
@@ -12,7 +12,7 @@ const TargetPlayerMonitor = {
 
   checkTrackedSeats() {
     if (this.trackedSeats.size === 0) { return; }
-    AvailableMonitor.checkFirstAvailable();
+    AvailableMonitor.checkFirstAvailable(this.trackedSeats.keys().next().value);
   },
 
   /**
@@ -58,9 +58,9 @@ const TargetPlayerMonitor = {
 
   addNewTrackedSeats() {
     // Используем цвет из конфига
-    this.trackedSeats = new Set();
+    this.trackedSeats = new Map();
     const targetColors = SeatMonitorConfig.selectedTargetColors;
-    if(targetColors.size === 0){
+    if (targetColors.size === 0) {
       return;
     }
     // Находим все элементы с border и проверяем цвет программно
@@ -68,7 +68,7 @@ const TargetPlayerMonitor = {
     const matchingPlayers = Array.from(allProfileNames).filter(playerProfileDiv => {
       const style = playerProfileDiv.getAttribute('style') || '';
       // Проверяем, содержит ли style нужный цвет (поддерживаем HEX и RGB)
-      return Array.from(targetColors).some(color => 
+      return Array.from(targetColors).some(color =>
         this.colorMatches(style, color));
     });
 
@@ -81,11 +81,10 @@ const TargetPlayerMonitor = {
         if (seatClass) {
           const seatIndex = this._getSeatIndex(gameSeatDiv);
           if (seatIndex) {
-            const seatKey = `${seatIndex.parentSelector}:${seatIndex.index}`;
 
             // Добавляем только если еще не отслеживаем
-            if (!this.trackedSeats.has(seatKey)) {
-              this.trackedSeats.add(seatKey);
+            if (!this.trackedSeats.has(seatIndex.index)) {
+              this.trackedSeats.set(seatIndex.index, seatIndex.parentSelector);
               if (SeatMonitorConfig.logActions) {
                 console.log(`[Seat Monitor] Добавлено новое место для отслеживания (индекс: ${seatIndex.index})`);
               }

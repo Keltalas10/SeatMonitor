@@ -70,25 +70,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const colorSelectContainer = document.getElementById('colorSelectContainer');
   const colorSelectWrapper = document.getElementById('colorSelectWrapper');
   const checkIntervalInput = document.getElementById('checkIntervalInput');
-
-  // Проверяем, что все необходимые элементы найдены
-  if (!statusDiv || !toggleBtn || !monitorInfo || !modeSelect || !colorSelectContainer || !colorSelectWrapper || !checkIntervalInput) {
-    console.error('[Popup] Не все элементы найдены:', {
-      statusDiv: !!statusDiv,
-      toggleBtn: !!toggleBtn,
-      monitorInfo: !!monitorInfo,
-      modeSelect: !!modeSelect,
-      colorSelectContainer: !!colorSelectContainer,
-      colorSelectWrapper: !!colorSelectWrapper,
-      checkIntervalInput: !!checkIntervalInput
-    });
-    if (statusDiv) {
-      statusDiv.textContent = 'Ошибка: не все элементы найдены';
-      statusDiv.className = 'status disabled';
-    }
-    return;
-  }
-
+  const isSeat =  document.getElementById('isSeat');
   let enabled = false;
   let isModeChanging = false; // Флаг, что пользователь меняет режим
 
@@ -290,13 +272,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   function updateColorSelectVisibility() {
     if (modeSelect.value === 'target-players') {
       colorSelectContainer.style.display = 'block';
-      colorSelectWrapper.style.display = 'flex';
     } else {
       colorSelectContainer.style.display = 'none';
-      // Закрываем dropdown если он открыт
-      if (colorSelectWrapper) {
-        colorSelectWrapper.style.display = 'none';
-      }
     }
   }
 
@@ -315,6 +292,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       checkIntervalInput.value = SeatMonitorConfig.checkInterval;
     }
   });
+
 
   // Загрузка текущего режима из content script
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -364,6 +342,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
+  isSeat.addEventListener('change', function () {
+    chrome.tabs.query({ active: true, currentWindow: true}, function (tabs) {
+      if(tabs[0]){
+        chrome.tabs.sendMessage(tabs[0].id, {action: "setIsSeat", checked: isSeat.checked})
+      }
+    })
+  })
   // Обработчик изменения цвета теперь в initColorSelect (обработчик клика на опции)
 
   // Обработчик изменения интервала проверки

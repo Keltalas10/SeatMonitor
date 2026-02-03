@@ -4,10 +4,6 @@
 (function () {
   'use strict';
 
-  console.log('[Content] Content script загружен');
-  console.log('[Content] MessageHandler доступен?', typeof MessageHandler !== 'undefined');
-  console.log('[Content] SeatMonitorConfig доступен?', typeof SeatMonitorConfig !== 'undefined');
-
   /**
    * Инициализирует расширение
    */

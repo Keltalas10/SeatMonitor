@@ -148,7 +148,7 @@
     </select>
     <div id="colorSelectContainer" style="display: none; margin-top: 10px;">
       <strong>Цвет маркировки игрока:</strong>
-      <div id="colorSelectWrapper" style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"/>
+      <div id="colorSelectWrapper" style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"></div>
     </div>
     <div style="margin-top: 10px;">
       <strong>Частота проверки (мс):</strong>
@@ -158,6 +158,11 @@
         Минимум: 100мс, Максимум: 10000мс
       </div>
     </div>
+    <div  style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
+      <strong>Садиться:</strong>
+      <input type="checkbox" id="isSeat" name="isSeat" checked>
+    </div>
+     
   </div>
 
   <button id="toggleBtn" class="toggle" disabled>Включить</button>
