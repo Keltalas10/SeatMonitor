@@ -143,8 +143,8 @@
   <div class="info" style="margin-bottom: 15px;">
     <strong>Режим мониторинга:</strong>
     <select id="modeSelect" style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc;">
-      <option value="first-available">Первое свободное место</option>
       <option value="target-players">Отслеживание целевых игроков</option>
+      <option value="first-available">Первое свободное место</option>
     </select>
     <div id="colorSelectContainer" style="display: none; margin-top: 10px;">
       <strong>Цвет маркировки игрока:</strong>
@@ -157,6 +157,12 @@
       <div style="font-size: 10px; color: #999; margin-top: 3px;">
         Минимум: 100мс, Максимум: 10000мс
       </div>
+    </div>
+    <div id="vpipContainer" style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;" >
+      <strong>VPIP:</strong>
+      <input type="checkbox" id="vpipCheckbox" name="vpip" checked>
+      <input type="number" id="vpipInput" min="1" max="100" step="1"
+              style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
     <div  style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
       <strong>Садиться:</strong>

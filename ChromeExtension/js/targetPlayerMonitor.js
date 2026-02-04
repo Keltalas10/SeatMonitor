@@ -65,13 +65,22 @@ const TargetPlayerMonitor = {
     }
     // Находим все элементы с border и проверяем цвет программно
     const allProfileNames = document.querySelectorAll('div.profileName[style*="border"]');
-    const matchingPlayers = Array.from(allProfileNames).filter(playerProfileDiv => {
+    const matchingPlayers = new Array();
+    Array.from(allProfileNames).forEach(playerProfileDiv => {
       const style = playerProfileDiv.getAttribute('style') || '';
-      // Проверяем, содержит ли style нужный цвет (поддерживаем HEX и RGB)
-      return Array.from(targetColors).some(color =>
-        this.colorMatches(style, color));
+      if (Array.from(targetColors).some(color =>
+        this.colorMatches(style, color))) {
+        matchingPlayers.push(playerProfileDiv);
+      }
     });
-
+    if (SeatMonitorConfig.vpipStatus) {
+      const allVpipValues = document.querySelectorAll('div.vpip');
+      allVpipValues.forEach(vpipDiv => {
+        if (parseInt(vpipDiv.textContent, 10) >= SeatMonitorConfig.vpipValue) {
+          matchingPlayers.push(vpipDiv);
+        }
+      })
+    }
     matchingPlayers.forEach(playerProfileDiv => {
       const gameSeatDiv = playerProfileDiv.closest("div[class*='game-seat']");
       if (gameSeatDiv) {

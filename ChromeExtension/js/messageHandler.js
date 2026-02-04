@@ -42,6 +42,12 @@ const MessageHandler = {
         case 'setIsSeat':
           this._handleSetIsSeat(request.checked, sendResponse);
           break;
+        case 'setVpipStatus':
+          this._handleSettVpipStatus(request.checked, sendResponse);
+          break;
+        case 'setVpipValue':
+          this._handleSetVpipValue(request.value, sendResponse);
+          break;
         default:
           console.log('[MessageHandler] Неизвестное действие:', request.action);
           sendResponse({ error: 'Unknown action' });
@@ -362,6 +368,24 @@ const MessageHandler = {
 
     SeatMonitorConfig.isSeat = checked;
     sendResponse({ success: true, checked: checked });
+  },
+
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
+  async _handleSetVpipStatus(status, sendResponse) {
+    SeatMonitorConfig.vpipStatus = status;
+    sendResponse({ success: true });
+  },
+
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
+  async _handleSetVpipValue(value, sendResponse) {
+    SeatMonitorConfig.vpipValue = value;
+    sendResponse({ success: true });
   }
 };
 

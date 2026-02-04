@@ -70,7 +70,10 @@ document.addEventListener('DOMContentLoaded', async function () {
   const colorSelectContainer = document.getElementById('colorSelectContainer');
   const colorSelectWrapper = document.getElementById('colorSelectWrapper');
   const checkIntervalInput = document.getElementById('checkIntervalInput');
-  const isSeat =  document.getElementById('isSeat');
+  const isSeat = document.getElementById('isSeat');
+  const vpipContainer = document.getElementById('vpipContainer');
+  const vpipInput = document.getElementById('vpipInput');
+  const vpipCheckbox = document.getElementById('vpipCheckbox');
   let enabled = false;
   let isModeChanging = false; // Флаг, что пользователь меняет режим
 
@@ -90,65 +93,62 @@ document.addEventListener('DOMContentLoaded', async function () {
       const option = document.createElement('div');
       option.className = 'color-option';
       option.style.backgroundColor = color;
-      option.style.margin ='5px';
+      option.style.margin = '5px';
       option.style.border = '3px solid white';
       option.setAttribute('data-color', color);
 
       // Обработчик выбора цвета
       option.addEventListener('click', function () {
         const selectedColor = this.getAttribute('data-color');
-        if(option.style.border === '3px solid blue'){
-           option.style.border = '3px solid white';
-           removeColor(selectedColor)
+        if (option.style.border === '3px solid blue') {
+          option.style.border = '3px solid white';
+          removeColor(selectedColor)
         }
-        else{
+        else {
           option.style.border = '3px solid blue';
 
           // Сохраняем в storage
           addColor(selectedColor);
-
-          // Отправляем в content script
-          
         }
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            if (tabs[0]) {
-              chrome.tabs.sendMessage(tabs[0].id, {
-                action: 'setTargetColor',
-                color: selectedColor
-              }, function (response) {
-                if (chrome.runtime.lastError) {
-                  console.error('[Popup] Ошибка при изменении цвета:', chrome.runtime.lastError);
-                } else if (response && response.success) {
-                  console.log('[Popup] Цвет изменен на:', selectedColor);
-                }
-              });
-            }
-          });
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setTargetColor',
+              color: selectedColor
+            }, function (response) {
+              if (chrome.runtime.lastError) {
+                console.error('[Popup] Ошибка при изменении цвета:', chrome.runtime.lastError);
+              } else if (response && response.success) {
+                console.log('[Popup] Цвет изменен на:', selectedColor);
+              }
+            });
+          }
+        });
       });
 
       colorSelectWrapper.appendChild(option);
     });
 
     // Загружаем сохраненный цвет из storage
-    chrome.storage.local.get(['selectedTargetColors'], function(result) {
+    chrome.storage.local.get(['selectedTargetColors'], function (result) {
       // Получаем цвета из хранилища или используем дефолтные
       const selectedColors = new Set(result.selectedTargetColors || []);
-      
+
       // Добавляем цвета из конфига, если они есть
       if (SeatMonitorConfig?.selectedTargetColors) {
         SeatMonitorConfig.selectedTargetColors.forEach(color => {
           selectedColors.add(color);
         });
       }
-      
+
       // Проверяем каждый элемент
       Array.from(colorSelectWrapper.children).forEach(option => {
         // Получаем цвет элемента
         const elementColor = option.style.backgroundColor;
-        
+
         // Приводим цвета к единому формату для сравнения
         const normalizedElementColor = normalizeColor(elementColor);
-        
+
         // Проверяем, есть ли такой цвет в выбранных
         let isSelected = false;
         for (let selectedColor of selectedColors) {
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             break;
           }
         }
-        
+
         if (isSelected) {
           option.style.border = '3px solid blue';
           // Добавляем в конфиг
@@ -168,112 +168,102 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
       });
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            if (tabs[0]) {
-              chrome.tabs.sendMessage(tabs[0].id, {
-                action: 'setTargetColors',
-                colors: Array.from(SeatMonitorConfig.selectedTargetColors)
-              }, function (response) {
-              });
-            }
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'setTargetColors',
+            colors: Array.from(SeatMonitorConfig.selectedTargetColors)
+          }, function (response) {
           });
+        }
+      });
     });
   }
   // Функция для нормализации цвета
   function normalizeColor(color) {
-      if (!color) return '';
-      
-      // Если цвет уже в формате hex (3, 4, 6 или 8 символов), возвращаем как есть
-      const hexMatch = color.trim().match(/^#([A-Fa-f0-9]{3,4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/);
-      if (hexMatch) {
-          // Возвращаем в нижнем регистре для консистентности
-          return color.trim().toUpperCase();
+    if (!color) return '';
+
+    // Если цвет уже в формате hex (3, 4, 6 или 8 символов), возвращаем как есть
+    const hexMatch = color.trim().match(/^#([A-Fa-f0-9]{3,4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/);
+    if (hexMatch) {
+      // Возвращаем в нижнем регистре для консистентности
+      return color.trim().toUpperCase();
+    }
+
+    // Создаем временный элемент для парсинга цвета
+    const tempDiv = document.createElement('div');
+    tempDiv.style.color = color;
+    document.body.appendChild(tempDiv);
+
+    try {
+      const computedColor = getComputedStyle(tempDiv).color;
+      const rgbMatch = computedColor.match(/^rgb(a?)\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/i);
+
+      if (rgbMatch) {
+        // Извлекаем компоненты цвета
+        const r = parseInt(rgbMatch[2]);
+        const g = parseInt(rgbMatch[3]);
+        const b = parseInt(rgbMatch[4]);
+        const a = rgbMatch[5] ? parseFloat(rgbMatch[5]) : null;
+
+        // Преобразуем в HEX
+        const toHex = (n) => {
+          const hex = n.toString(16);
+          return hex.length === 1 ? '0' + hex : hex;
+        };
+
+        let hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+
+        // Добавляем альфа-канал если есть
+        if (a !== null) {
+          const alphaHex = Math.round(a * 255).toString(16).padStart(2, '0');
+          hexColor += alphaHex;
+        }
+
+        return hexColor.toUpperCase();
       }
-      
-      // Создаем временный элемент для парсинга цвета
-      const tempDiv = document.createElement('div');
-      tempDiv.style.color = color;
-      document.body.appendChild(tempDiv);
-      
-      try {
-          const computedColor = getComputedStyle(tempDiv).color;
-          const rgbMatch = computedColor.match(/^rgb(a?)\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/i);
-          
-          if (rgbMatch) {
-              // Извлекаем компоненты цвета
-              const r = parseInt(rgbMatch[2]);
-              const g = parseInt(rgbMatch[3]);
-              const b = parseInt(rgbMatch[4]);
-              const a = rgbMatch[5] ? parseFloat(rgbMatch[5]) : null;
-              
-              // Преобразуем в HEX
-              const toHex = (n) => {
-                  const hex = n.toString(16);
-                  return hex.length === 1 ? '0' + hex : hex;
-              };
-              
-              let hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-              
-              // Добавляем альфа-канал если есть
-              if (a !== null) {
-                  const alphaHex = Math.round(a * 255).toString(16).padStart(2, '0');
-                  hexColor += alphaHex;
-              }
-              
-              return hexColor.toUpperCase();
-          }
-          
-          // Если не удалось распарсить как rgb/rgba, возвращаем computedColor
-          return computedColor.toUpperCase();
-      } finally {
-          document.body.removeChild(tempDiv);
-      }
+
+      // Если не удалось распарсить как rgb/rgba, возвращаем computedColor
+      return computedColor.toUpperCase();
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
   }
 
   function addColor(color) {
     chrome.storage.local.get(['selectedTargetColors'], (result) => {
       const colors = new Set(result.selectedTargetColors || []);
       colors.add(color);
-      
-      chrome.storage.local.set({ 
-        selectedTargetColors: Array.from(colors) 
+
+      chrome.storage.local.set({
+        selectedTargetColors: Array.from(colors)
       }, () => {
         console.log('Цвет добавлен:', color);
       });
     });
   }
-  
+
   // Удаление цвета
   function removeColor(color) {
     chrome.storage.local.get(['selectedTargetColors'], (result) => {
       const colors = new Set(result.selectedTargetColors || []);
       colors.delete(color);
-      
-      chrome.storage.local.set({ 
-        selectedTargetColors: Array.from(colors) 
+
+      chrome.storage.local.set({
+        selectedTargetColors: Array.from(colors)
       }, () => {
         console.log('Цвет удален:', color);
       });
     });
-  }
-  // Функция для определения контрастного цвета текста
-  function getContrastColor(rgb) {
-    // Парсим rgb строку
-    const match = rgb.match(/\d+/g);
-    if (!match || match.length < 3) return '#000';
-    const r = parseInt(match[0]);
-    const g = parseInt(match[1]);
-    const b = parseInt(match[2]);
-    // Вычисляем яркость
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 128 ? '#000' : '#fff';
   }
 
   // Показ/скрытие dropdown цветов в зависимости от режима
   function updateColorSelectVisibility() {
     if (modeSelect.value === 'target-players') {
       colorSelectContainer.style.display = 'block';
+      vpipContainer.style.display = 'flex'
     } else {
       colorSelectContainer.style.display = 'none';
+      vpipContainer.style.display = 'none'
     }
   }
 
@@ -343,12 +333,73 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   isSeat.addEventListener('change', function () {
-    chrome.tabs.query({ active: true, currentWindow: true}, function (tabs) {
-      if(tabs[0]){
-        chrome.tabs.sendMessage(tabs[0].id, {action: "setIsSeat", checked: isSeat.checked})
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "setIsSeat", checked: isSeat.checked })
       }
     })
   })
+
+
+  vpipCheckbox.addEventListener('change', function () {
+    chrome.storage.local.set({ vpipStatus: vpipCheckbox.checked });
+    if (vpipCheckbox.checked) {
+      vpipInput.disabled = false;
+    } else {
+      vpipInput.disabled = true;
+    }
+
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "setVpipStatus", checked: vpipCheckbox.checked })
+      }
+    })
+  })
+
+  vpipInput.addEventListener('change', function () {
+    chrome.storage.local.set({ vpipValue: vpipInput.value });
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "setVpipValue", value: vpipInput.value })
+      }
+    })
+  })
+
+  function initVpip() {
+    // Проверяем, что config загружен
+    if (typeof SeatMonitorConfig === 'undefined' || !SeatMonitorConfig.targetColors) {
+      console.error('[Popup] SeatMonitorConfig не загружен');
+      return;
+    }
+
+    chrome.storage.local.get(['vpipStatus'], function (result) {
+      const status = result.vpipStatus ?? SeatMonitorConfig.vpipStatus;
+      vpipCheckbox.checked = status;
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'setVpipStatus',
+            status: status
+          });
+        }
+      });
+    });
+
+    chrome.storage.local.get(['vpipValue'], function (result) {
+      const value = result.vpipValue ?? SeatMonitorConfig.vpipValue;
+      vpipInput.value = value;
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'setVpipValue',
+            value: value
+          });
+        }
+      });
+    });
+  }
+
+  initVpip();
   // Обработчик изменения цвета теперь в initColorSelect (обработчик клика на опции)
 
   // Обработчик изменения интервала проверки
@@ -384,33 +435,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
-  function colorMatches(color, targetColor) {
-    if (!color || !targetColor) return false;
-
-    // Если цвет в HEX формате, конвертируем в RGB
-    let rgbColor = targetColor;
-    if (targetColor.startsWith('#')) {
-      rgbColor = hexToRgb(targetColor);
-    }
-
-    // Проверяем оба формата (RGB и HEX)
-    return color == targetColor || color == rgbColor;
-  }
-  function hexToRgb(hex) {
-    // Убираем # если есть
-    hex = hex.replace('#', '');
-
-    // Конвертируем короткий формат (#F41 -> #FF4411)
-    if (hex.length === 3) {
-      hex = hex.split('').map(char => char + char).join('');
-    }
-
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-
-    return `rgb(${r}, ${g}, ${b})`;
-  }
   // Получение статуса
   function updateStatus() {
     console.log('[Popup] updateStatus вызван');
