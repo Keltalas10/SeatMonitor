@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsyI7KcpIEJddiqa9iW84SXEmYT9RXAt5TG6rUxx1CBl0XbJd3Uk3BvJnyFQ1AXpfHsTqGC0ue8lYAgWwaOyJcHX30zijoQv0h04LbT6OQsXs3VwtTnTRpsAVd6K1IuL4jbZerV21COIptLPbs8HLjWJWp9GQmSlcJcLel4vSse8bk7a5LOlB4Ts3oooLEA78/Ust/IyCn51Me/TZ+ZKBRw4mhTH9pTmfp4oLy88KjOQ87qhlKrSXXJsTjlkrkamy5gjWH95T38H7c/1db2tZM488hwrO+wOCJ+/XmMHJq/SV3wZrcG3Y0N3N5bs+EGhXyaqtQuOeHTByiB8l5UCupQIDAQAB",
   "name": "Seat Monitor",
-  "version": "1.21",
+  "version": "1.22",
   "description": "Автоматический мониторинг и клик по элементам с классом 'seat-undefined'",
   "permissions": ["activeTab", "scripting", "storage", "notifications", "tabs"],
   "host_permissions": ["https://game.r-gaming.com/*"],

@@ -223,7 +223,7 @@ const SeatMonitor = {
     // Стили overlay - только для позиционирования
     Object.assign(popupOverlay.style, {
       position: 'fixed',
-      top: '20px',
+      bottom: '10px',
       right: '20px',
       zIndex: '2147483647', // Максимальный z-index
       pointerEvents: 'none' // Пропускаем клики сквозь
