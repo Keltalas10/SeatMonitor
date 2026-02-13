@@ -38,9 +38,11 @@ const PopupHandler = {
         }
       }
 
-
+      if (!SeatMonitorConfig.isSeat) {
+        return true;
+      }
       // Ждем немного после клика на сумму
-      await this._delay(300);
+      await this._delay(Math.floor(Math.random() * (4000 - 1000 + 1)) + 1500);
 
       // Кликаем на кнопку "Buy-in" если она disabled
       const buyInClicked = await this._clickBuyInButton(popup, logActions);
@@ -103,14 +105,14 @@ const PopupHandler = {
   getDivChildrenByPath(element, paths) {
     let currentElement = element;
     for (const path of paths) {
-      if(path < 0) {
+      if (path < 0) {
         currentElement = this.getDivChildren(currentElement);
         if (currentElement.length <= ((path + 1) * -1)) {
           return undefined;
         }
         currentElement = currentElement[currentElement.length + path];
       }
-      else{
+      else {
         currentElement = this.getDivChildren(currentElement);
         if (currentElement.length <= path) {
           return undefined;
@@ -145,10 +147,19 @@ const PopupHandler = {
         }
         return false;
       }
-      const value = minAmountDiv.textContent.trim().replace(',', ''); // "30,000"
+      const minAmount = minAmountDiv.textContent.trim().replace(',', ''); // "30,000"
+      const minBBDiv = this.getDivChildrenByPath(popup, [1, 0, 3, 0]);
+      if (!minBBDiv) {
+        if (logActions) {
+          console.log('[Seat Monitor] Не найден min BB value');
+        }
+        return false;
+      }
+      const itemNameDiv = minBBDiv.querySelector('.item-name');
+      const minBB = parseInt(itemNameDiv?.nextSibling?.nextSibling?.data);
       // Устанавливаем значение разными способами сразу
-      input.value = value;
-      input.setAttribute('value', value);
+      input.value = SeatMonitorConfig.buyInBB ? minAmount / minBB * SeatMonitorConfig.buyInBB : minAmount;
+      input.setAttribute('value', minAmount);
 
       // Принудительно вызываем события
       input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -196,9 +207,6 @@ const PopupHandler = {
           if (logActions) {
             console.log('[Seat Monitor] Клик на кнопку Buy-in выполнен');
           }
-
-          // Показываем уведомление и подсвечиваем вкладку
-          this._notifyBuyInClick();
 
           return true;
         }
@@ -269,54 +277,5 @@ const PopupHandler = {
     // Берем последний div (кнопка Buy-in)
     return firstChildDivs[firstChildDivs.length - 1]; // последний div
   },
-  /**
-   * Отправляет уведомление о клике на buy-in
-   * @private
-   */
-  _notifyBuyInClick() {
-    try {
-      // Отправляем сообщение в background script для показа уведомления
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'showBuyInNotification' }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('[Seat Monitor] Ошибка при отправке уведомления:', chrome.runtime.lastError);
-          }
-        });
-      }
-
-      // Также воспроизводим звуковое оповещение
-      this._playNotificationSound();
-    } catch (error) {
-      console.error('[Seat Monitor] Ошибка при показе уведомления:', error);
-    }
-  },
-
-  /**
-   * Воспроизводит звуковое оповещение
-   * @private
-   */
-  _playNotificationSound() {
-    try {
-      // Создаем простой звуковой сигнал через Web Audio API
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Настраиваем звук (короткий бип)
-      oscillator.frequency.value = 800; // Частота в Гц
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.2);
-    } catch (error) {
-      // Игнорируем ошибки звука (может быть заблокирован браузером)
-      console.log('[Seat Monitor] Не удалось воспроизвести звук:', error);
-    }
-  }
 };
 

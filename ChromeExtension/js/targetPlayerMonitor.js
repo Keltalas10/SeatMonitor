@@ -59,20 +59,20 @@ const TargetPlayerMonitor = {
   addNewTrackedSeats() {
     // Используем цвет из конфига
     this.trackedSeats = new Map();
-    const targetColors = SeatMonitorConfig.selectedTargetColors;
     if (targetColors.size === 0) {
-      return;
-    }
-    // Находим все элементы с border и проверяем цвет программно
     const allProfileNames = document.querySelectorAll('div.profileName[style*="border"]');
     const matchingPlayers = new Array();
-    Array.from(allProfileNames).forEach(playerProfileDiv => {
-      const style = playerProfileDiv.getAttribute('style') || '';
-      if (Array.from(targetColors).some(color =>
-        this.colorMatches(style, color))) {
-        matchingPlayers.push(playerProfileDiv);
-      }
-    });
+    const targetColors = SeatMonitorConfig.selectedTargetColors;
+    if (targetColors.size !== 0) {
+      Array.from(allProfileNames).forEach(playerProfileDiv => {
+        const style = playerProfileDiv.getAttribute('style') || '';
+        if (Array.from(targetColors).some(color =>
+          this.colorMatches(style, color))) {
+          matchingPlayers.push(playerProfileDiv);
+        }
+      });
+    }
+
     if (SeatMonitorConfig.vpipStatus) {
       const allVpipValues = document.querySelectorAll('div.vpip');
       allVpipValues.forEach(vpipDiv => {
@@ -81,9 +81,22 @@ const TargetPlayerMonitor = {
         }
       })
     }
+
     matchingPlayers.forEach(playerProfileDiv => {
       const gameSeatDiv = playerProfileDiv.closest("div[class*='game-seat']");
       if (gameSeatDiv) {
+        if (SeatMonitorConfig.stackStatus) {
+          const stackWrapper = gameSeatDiv.querySelector('div.stack');
+          const valueElement = stackWrapper.querySelector('div');
+          if (valueElement) {
+            const stackText = valueElement.textContent;
+            const numericValue = parseFloat(stackText.replace('BB', '').trim());
+
+            if (isNaN(numericValue) || numericValue < SeatMonitorConfig.stackValue) {
+              return;
+            }
+          }
+        }
         const classList = Array.from(gameSeatDiv.classList);
         const seatClass = classList.find(cls => cls.startsWith('seat-') && cls !== 'seat-undefined');
 

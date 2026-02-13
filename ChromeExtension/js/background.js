@@ -88,7 +88,7 @@ async function showBuyInNotification(tabId) {
       type: 'basic',
       iconUrl: iconUrl,
       title: '🎯 Seat Monitor',
-      message: 'Клик на Buy-in выполнен!',
+      message: 'Mecто найдено!',
       priority: 2
     });
 

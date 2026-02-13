@@ -120,21 +120,25 @@ const SeatMonitor = {
     if (!ElementUtils.isElementVisible(element)) {
       return;
     }
-
     // Кликаем по элементу
     if (ClickHandler.clickElement(element, SeatMonitorConfig.logActions)) {
       // После успешного клика обрабатываем popup
       this._logElementClicked();
       // Обрабатываем popup после клика на seat
-      if (!SeatMonitorConfig.isSeat) {
-        this.stop();
-        this._notifyElementClicked(false);
-        return;
-      }
       PopupHandler.handlePopupAfterSeatClick(SeatMonitorConfig.logActions)
-        .then(() => {
-          this.stop();
-          this._notifyElementClicked(true);
+        .then((isSuccess) => {
+          if (isSuccess) {
+            this.stop();
+            this._notifyElementClicked(SeatMonitorConfig.isSeat);
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+              chrome.runtime.sendMessage({ action: 'showBuyInNotification' }, (response) => {
+                if (chrome.runtime.lastError) {
+                  console.log('[Seat Monitor] Ошибка при отправке уведомления:', chrome.runtime.lastError);
+                }
+              });
+            }
+            this._playNotificationSound();
+          }
         })
         .catch((e) => {
           if (SeatMonitorConfig.logActions) {
@@ -156,6 +160,30 @@ const SeatMonitor = {
       const now = new Date().toLocaleTimeString();
       console.log(`[${now}] [Seat Monitor] Найден и кликнут элемент 'seat-undefined'`);
       console.log(`[${now}] [Seat Monitor] Мониторинг остановлен`);
+    }
+  },
+
+  _playNotificationSound() {
+    try {
+      // Создаем простой звуковой сигнал через Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Настраиваем звук (короткий бип)
+      oscillator.frequency.value = 800; // Частота в Гц
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (error) {
+      // Игнорируем ошибки звука (может быть заблокирован браузером)
+      console.log('[Seat Monitor] Не удалось воспроизвести звук:', error);
     }
   },
 

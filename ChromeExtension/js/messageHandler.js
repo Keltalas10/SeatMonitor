@@ -39,14 +39,26 @@ const MessageHandler = {
         case 'setCheckInterval':
           this._handleSetCheckInterval(request.interval, sendResponse);
           break;
+        case 'setSeatTimeout':
+          this._handleSetSeatTimeout(request.interval, sendResponse);
+          break;
         case 'setIsSeat':
           this._handleSetIsSeat(request.checked, sendResponse);
           break;
         case 'setVpipStatus':
-          this._handleSettVpipStatus(request.checked, sendResponse);
+          this._handleSetVpipStatus(request.status, sendResponse);
           break;
         case 'setVpipValue':
           this._handleSetVpipValue(request.value, sendResponse);
+          break;
+        case 'setStackStatus':
+          this._handleSetStackStatus(request.status, sendResponse);
+          break;
+        case 'setStackValue':
+          this._handleSetStackValue(request.value, sendResponse);
+          break;
+        case 'setBuyInValue':
+          this._handleSetBuyInValue(request.value, sendResponse);
           break;
         default:
           console.log('[MessageHandler] Неизвестное действие:', request.action);
@@ -364,6 +376,38 @@ const MessageHandler = {
  * Обрабатывает изменение интервала проверки
  * @private
  */
+  async _handleSetSeatTimeout(interval, sendResponse) {
+    if (!interval || interval < 100 || interval > 10000) {
+      sendResponse({ success: false, error: 'Интервал должен быть от 100 до 10000 мс' });
+      return;
+    }
+
+    SeatMonitorConfig.seatTimeout = interval;
+
+    // Сохраняем интервал в storage
+    try {
+      await chrome.storage.local.set({ seatTimeout: interval });
+    } catch (error) {
+      console.error('[MessageHandler] Ошибка при сохранении интервала:', error);
+    }
+
+    // Если мониторинг включен, перезапускаем его с новым интервалом
+    if (SeatMonitorConfig.enabled) {
+      SeatMonitor.stop();
+      SeatMonitor.start();
+    }
+
+    if (SeatMonitorConfig.logActions) {
+      console.log(`[MessageHandler] Интервал изменен на: ${interval}мс`);
+    }
+
+    sendResponse({ success: true, interval: interval });
+  },
+
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
   async _handleSetIsSeat(checked, sendResponse) {
 
     SeatMonitorConfig.isSeat = checked;
@@ -385,6 +429,32 @@ const MessageHandler = {
  */
   async _handleSetVpipValue(value, sendResponse) {
     SeatMonitorConfig.vpipValue = value;
+    sendResponse({ success: true });
+  },
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
+  async _handleSetStackStatus(status, sendResponse) {
+    SeatMonitorConfig.stackStatus = status;
+    sendResponse({ success: true });
+  },
+
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
+  async _handleSetStackValue(value, sendResponse) {
+    SeatMonitorConfig.stackValue = value;
+    sendResponse({ success: true });
+  },
+
+  /**
+ * Обрабатывает изменение интервала проверки
+ * @private
+ */
+  async _handleSetBuyInValue(value, sendResponse) {
+    SeatMonitorConfig.buyInBB = value;
     sendResponse({ success: true });
   }
 };

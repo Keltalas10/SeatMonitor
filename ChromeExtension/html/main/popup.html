@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <style>
@@ -9,27 +10,32 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
     }
+
     h1 {
       margin: 0 0 15px 0;
       font-size: 18px;
       color: #333;
     }
+
     .status {
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 15px;
       font-size: 14px;
     }
+
     .status.enabled {
       background-color: #d4edda;
       color: #155724;
       border: 1px solid #c3e6cb;
     }
+
     .status.disabled {
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
+
     .color-option {
       width: 30px;
       height: 30px;
@@ -37,6 +43,7 @@
       border: 1px solid transparent;
       border-bottom: 1px solid #eee;
     }
+
     button {
       width: 100%;
       padding: 10px;
@@ -47,41 +54,51 @@
       font-size: 14px;
       font-weight: bold;
     }
+
     button.toggle {
       background-color: #007bff;
       color: white;
     }
+
     button.toggle:hover:not(:disabled) {
       opacity: 0.9;
     }
+
     button.toggle:disabled {
       background-color: #6c757d;
       color: white;
       cursor: not-allowed;
       opacity: 0.6;
     }
+
     button.toggle.enable {
       background-color: #28a745;
       color: white;
     }
+
     button.toggle.enable:hover:not(:disabled) {
       background-color: #218838;
     }
+
     button.toggle.disable {
       background-color: #dc3545;
       color: white;
     }
+
     button.toggle.disable:hover:not(:disabled) {
       background-color: #c82333;
     }
+
     button.logout {
       background-color: #dc3545;
       color: white;
       margin-top: 10px;
     }
+
     button.logout:hover {
       background-color: #c82333;
     }
+
     .info {
       margin-top: 15px;
       padding: 10px;
@@ -90,6 +107,7 @@
       font-size: 12px;
       color: #666;
     }
+
     .user-info {
       margin-top: 15px;
       padding: 10px;
@@ -99,18 +117,22 @@
       color: #004085;
       border: 1px solid #b3d7ff;
     }
+
     .user-info strong {
       display: block;
       margin-bottom: 5px;
     }
+
     .subscription-date {
       margin-top: 5px;
       font-weight: bold;
       color: #007bff;
     }
+
     .subscription-date.expired {
       color: #dc3545;
     }
+
     .telegram-info {
       margin-top: 15px;
       padding: 5px;
@@ -121,58 +143,89 @@
       text-align: center;
       border-top: 2px solid #e9ecef;
     }
+
     .telegram-info a {
       color: #0088cc;
       text-decoration: none;
     }
+
     .telegram-info a:hover {
       text-decoration: underline;
     }
+
     .telegram-info .contact-line {
       margin: 3px 0;
     }
   </style>
 </head>
+
 <body>
   <h1>🎯 Seat Monitor</h1>
-  
+
   <div id="status" class="status">
     Инициализация...
   </div>
-  
+
   <div class="info" style="margin-bottom: 15px;">
     <strong>Режим мониторинга:</strong>
-    <select id="modeSelect" style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc;">
+    <select id="modeSelect"
+      style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc;">
       <option value="target-players">Отслеживание целевых игроков</option>
       <option value="first-available">Первое свободное место</option>
     </select>
     <div id="colorSelectContainer" style="display: none; margin-top: 10px;">
       <strong>Цвет маркировки игрока:</strong>
-      <div id="colorSelectWrapper" style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"></div>
+      <div id="colorSelectWrapper"
+        style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"></div>
     </div>
-    <div style="margin-top: 10px;">
-      <strong>Частота проверки (мс):</strong>
-      <input type="number" id="checkIntervalInput" min="100" max="10000" step="100" 
-             style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
-      <div style="font-size: 10px; color: #999; margin-top: 3px;">
-        Минимум: 100мс, Максимум: 10000мс
+    <div style="display: flex;  flex-direction: row; margin-top: 10px;">
+      <div style="display: none;">
+        <strong>Частота проверки (с):</strong>
+        <input type="number" id="checkIntervalInput" min="0.1" max="10" step="0.1"
+          style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+        <div style="font-size: 10px; color: #999; margin-top: 3px;">
+          Минимум: 0.1с, Максимум: 10с
+        </div>
       </div>
     </div>
-    <div id="vpipContainer" style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;" >
+    <div id="vpipContainer"
+      style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
       <strong>VPIP:</strong>
       <input type="checkbox" id="vpipCheckbox" name="vpip" checked>
       <input type="number" id="vpipInput" min="1" max="100" step="1"
-              style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+        style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
-    <div  style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
-      <strong>Садиться:</strong>
-      <input type="checkbox" id="isSeat" name="isSeat" checked>
+    <div id="stackContainer"
+      style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
+      <strong>Stack, BB:</strong>
+      <input type="checkbox" id="stackCheckbox" name="stack" checked>
+      <input type="number" id="stackInput" step="0.01"
+        style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
-     
+    <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
+      <strong>Садиться?:</strong>
+      <input type="checkbox" id="isSeat" name="isSeat">
+      <div style="display: none;">
+        <strong>Пауза перед подкой (с):</strong>
+        <input type="number" id="seatTimeoutInput" min="1" max="10" step="0.1"
+          style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+        <div style="font-size: 10px; color: #999; margin-top: 3px;">
+          Минимум: 1с, Максимум: 10с
+        </div>
+      </div>
+    </div>
+    <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
+      <strong>Buy-In, BB:</strong>
+      <input type="number" id="buyInInput" min="10" max="10000" step="5" value="50"
+        style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+      <div style="font-size: 10px; color: #999; margin-top: 3px;">
+        Минимум: 10BB, Максимум: 10000BB
+      </div>
+    </div>
   </div>
 
   <button id="toggleBtn" class="toggle" disabled>Включить</button>
-  
+
   <div class="info">
     <strong>Мониторинг:</strong> <span id="monitorInfo">-</span>
   </div>
@@ -182,7 +235,7 @@
     <div class="subscription-date" id="subscriptionDate">
       Подписка: не установлена
     </div>
-    
+
   </div>
 
   <div class="telegram-info">
@@ -199,5 +252,5 @@
   <script src="../../js/auth.js"></script>
   <script src="popup.js"></script>
 </body>
-</html>
 
+</html>

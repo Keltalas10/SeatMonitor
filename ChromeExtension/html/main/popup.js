@@ -70,10 +70,15 @@ document.addEventListener('DOMContentLoaded', async function () {
   const colorSelectContainer = document.getElementById('colorSelectContainer');
   const colorSelectWrapper = document.getElementById('colorSelectWrapper');
   const checkIntervalInput = document.getElementById('checkIntervalInput');
+  const seatTimeoutInput = document.getElementById('seatTimeoutInput');
   const isSeat = document.getElementById('isSeat');
   const vpipContainer = document.getElementById('vpipContainer');
   const vpipInput = document.getElementById('vpipInput');
   const vpipCheckbox = document.getElementById('vpipCheckbox');
+  const stackContainer = document.getElementById('stackContainer');
+  const stackInput = document.getElementById('stackInput');
+  const buyInInput = document.getElementById('buyInInput');
+  const stackCheckbox = document.getElementById('stackCheckbox');
   let enabled = false;
   let isModeChanging = false; // Флаг, что пользователь меняет режим
 
@@ -261,9 +266,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (modeSelect.value === 'target-players') {
       colorSelectContainer.style.display = 'block';
       vpipContainer.style.display = 'flex'
+      stackContainer.style.display = 'flex'
     } else {
       colorSelectContainer.style.display = 'none';
-      vpipContainer.style.display = 'none'
+      vpipContainer.style.display = 'none';
+      stackContainer.style.display = 'none';
     }
   }
 
@@ -271,32 +278,103 @@ document.addEventListener('DOMContentLoaded', async function () {
   initColorSelect();
 
   // Загрузка текущего режима и интервала из storage
-  chrome.storage.local.get(['monitorMode', 'checkInterval'], function (result) {
-    if (result.monitorMode) {
-      modeSelect.value = result.monitorMode;
-      updateColorSelectVisibility();
-    }
-    if (result.checkInterval) {
-      checkIntervalInput.value = result.checkInterval;
-    } else if (typeof SeatMonitorConfig !== 'undefined' && SeatMonitorConfig.checkInterval) {
-      checkIntervalInput.value = SeatMonitorConfig.checkInterval;
-    }
-  });
-
-
-  // Загрузка текущего режима из content script
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (tabs[0]) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'getMode' }, function (response) {
-        if (response && response.mode && !isModeChanging) {
-          modeSelect.value = response.mode;
-          // Сохраняем в storage
-          chrome.storage.local.set({ monitorMode: response.mode });
-          updateColorSelectVisibility();
-        }
-      });
-    }
-  });
+  chrome.storage.local.get(['monitorMode',
+    'checkInterval',
+    'seatTimeout',
+    'isSeat',
+    'stackStatus',
+    'stackValue',
+    'vpipStatus',
+    'vpipValue',
+    'buyInValue'], function (result) {
+      if (result.monitorMode !== undefined) {
+        modeSelect.value = result.monitorMode;
+        updateColorSelectVisibility();
+      }
+      if (result.checkInterval !== undefined) {
+        checkIntervalInput.value = result.checkInterval / 1000;
+      }
+      if (result.seatTimeout !== undefined) {
+        seatTimeoutInput.value = result.seatTimeout / 1000;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setSeatTimeout',
+              interval: result.seatTimeout
+            });
+          }
+        });
+      }
+      if (result.isSeat !== undefined) {
+        isSeat.checked = result.isSeat;
+        seatTimeoutInput.disabled = !result.isSeat;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setIsSeat',
+              checked: result.isSeat
+            });
+          }
+        });
+      }
+      if (result.vpipStatus !== undefined) {
+        vpipCheckbox.checked = result.vpipStatus;
+        vpipInput.disabled = !result.vpipStatus;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setVpipStatus',
+              status: result.vpipStatus
+            });
+          }
+        });
+      }
+      if (result.vpipValue !== undefined) {
+        vpipInput.value = result.vpipValue;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setVpipValue',
+              value: result.vpipValue
+            });
+          }
+        });
+      }
+      if (result.stackStatus !== undefined) {
+        stackCheckbox.checked = result.stackStatus;
+        stackInput.disabled = !result.stackStatus;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setStackStatus',
+              status: result.stackStatus
+            });
+          }
+        });
+      }
+      if (result.stackValue !== undefined) {
+        stackInput.value = result.stackValue;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setStackValue',
+              value: result.stackValue
+            });
+          }
+        });
+      }
+      if (result.buyInValue !== undefined) {
+        buyInInput.value = result.buyInValue;
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'setBuyInValue',
+              value: result.buyInValue
+            });
+          }
+        });
+      }
+    });
 
   // Обработчик изменения режима
   modeSelect.addEventListener('change', function () {
@@ -333,6 +411,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   isSeat.addEventListener('change', function () {
+    chrome.storage.local.set({ isSeat: isSeat.checked });
+    seatTimeoutInput.disabled = !isSeat.checked;
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (tabs[0]) {
         chrome.tabs.sendMessage(tabs[0].id, { action: "setIsSeat", checked: isSeat.checked })
@@ -343,15 +423,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   vpipCheckbox.addEventListener('change', function () {
     chrome.storage.local.set({ vpipStatus: vpipCheckbox.checked });
-    if (vpipCheckbox.checked) {
-      vpipInput.disabled = false;
-    } else {
-      vpipInput.disabled = true;
-    }
-
+    vpipInput.disabled = !vpipCheckbox.checked;
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "setVpipStatus", checked: vpipCheckbox.checked })
+        chrome.tabs.sendMessage(tabs[0].id, { action: "setVpipStatus", status: vpipCheckbox.checked })
       }
     })
   })
@@ -365,53 +440,35 @@ document.addEventListener('DOMContentLoaded', async function () {
     })
   })
 
-  function initVpip() {
-    // Проверяем, что config загружен
-    if (typeof SeatMonitorConfig === 'undefined' || !SeatMonitorConfig.targetColors) {
-      console.error('[Popup] SeatMonitorConfig не загружен');
-      return;
-    }
+  stackCheckbox.addEventListener('change', function () {
+    chrome.storage.local.set({ stackStatus: stackCheckbox.checked });
+    stackInput.disabled = !stackCheckbox.checked;
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "setStackStatus", status: stackCheckbox.checked })
+      }
+    })
+  })
 
-    chrome.storage.local.get(['vpipStatus'], function (result) {
-      const status = result.vpipStatus ?? SeatMonitorConfig.vpipStatus;
-      vpipCheckbox.checked = status;
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'setVpipStatus',
-            status: status
-          });
-        }
-      });
-    });
-
-    chrome.storage.local.get(['vpipValue'], function (result) {
-      const value = result.vpipValue ?? SeatMonitorConfig.vpipValue;
-      vpipInput.value = value;
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'setVpipValue',
-            value: value
-          });
-        }
-      });
-    });
-  }
-
-  initVpip();
-  // Обработчик изменения цвета теперь в initColorSelect (обработчик клика на опции)
+  stackInput.addEventListener('change', function () {
+    chrome.storage.local.set({ stackValue: stackInput.value });
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "setStackValue", value: stackInput.value })
+      }
+    })
+  })
 
   // Обработчик изменения интервала проверки
   checkIntervalInput.addEventListener('change', function () {
-    let interval = parseInt(checkIntervalInput.value, 10);
+    let interval = parseFloat(checkIntervalInput.value, 10);
 
     // Валидация: проверяем диапазон
-    if (isNaN(interval) || interval < 100) {
-      interval = 100;
+    if (isNaN(interval) || interval < 0.1) {
+      interval = 0.1;
       checkIntervalInput.value = interval;
-    } else if (interval > 10000) {
-      interval = 10000;
+    } else if (interval > 10) {
+      interval = 10;
       checkIntervalInput.value = interval;
     }
 
@@ -423,12 +480,76 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (tabs[0]) {
         chrome.tabs.sendMessage(tabs[0].id, {
           action: 'setCheckInterval',
-          interval: interval
+          interval: interval * 1000
         }, function (response) {
           if (chrome.runtime.lastError) {
             console.error('[Popup] Ошибка при изменении интервала:', chrome.runtime.lastError);
           } else if (response && response.success) {
             console.log('[Popup] Интервал изменен на:', interval, 'мс');
+          }
+        });
+      }
+    });
+  });
+
+  seatTimeoutInput.addEventListener('change', function () {
+    let interval = parseFloat(seatTimeoutInput.value, 10);
+
+    // Валидация: проверяем диапазон
+    if (isNaN(interval) || interval < 0.1) {
+      interval = 0.1;
+      seatTimeoutInput.value = interval;
+    } else if (interval > 10) {
+      interval = 10;
+      seatTimeoutInput.value = interval;
+    }
+
+    // Сохраняем в storage
+    chrome.storage.local.set({ seatTimeout: interval });
+
+    // Отправляем в content script
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: 'setSeatTimeout',
+          interval: interval * 1000
+        }, function (response) {
+          if (chrome.runtime.lastError) {
+            console.error('[Popup] Ошибка при изменении интервала:', chrome.runtime.lastError);
+          } else if (response && response.success) {
+            console.log('[Popup] Интервал изменен на:', interval, 'мс');
+          }
+        });
+      }
+    });
+  });
+
+  buyInInput.addEventListener('change', function () {
+    let buyInValue = parseInt(buyInInput.value, 10);
+
+    // Валидация: проверяем диапазон
+    if (isNaN(buyInValue) || buyInValue < 10) {
+      buyInValue = 10;
+      buyInInput.value = buyInValue;
+    } else if (buyInValue > 10000) {
+      buyInValue = 10000;
+      buyInInput.value = buyInValue;
+    }
+
+    // Сохраняем в storage
+    chrome.storage.local.set({ buyInValue: buyInValue });
+
+    // Отправляем в content script
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: 'setBuyInValue',
+          value: buyInValue
+        }, function (response) {
+          if (chrome.runtime.lastError) {
+            console.error('[Popup] Ошибка при изменении buy-in:', chrome.runtime.lastError);
+          } else if (response && response.success) {
+            console.log('[Popup] bui-in изменен на:', buyInValue, 'BB');
           }
         });
       }
@@ -476,7 +597,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       const timeoutId = setTimeout(() => {
         if (!responseReceived) {
           console.log('[Popup] Таймаут ожидания ответа (3 секунды)');
-          statusDiv.textContent = 'Нет ответа от страницы. Перезагрузите страницу';
+          statusDiv.textContent = 'Нет ответа от страницы. Перезагрузите страницу "Ctrl+R';
           statusDiv.className = 'status disabled';
           toggleBtn.disabled = true;
           toggleBtn.classList.remove('enable', 'disable');
@@ -497,7 +618,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.log('[Popup] Ошибка подключения:', errorMsg);
 
             if (errorMsg && (errorMsg.includes('Could not establish connection') || errorMsg.includes('Receiving end does not exist'))) {
-              statusDiv.textContent = 'Content script не загружен. Перезагрузите страницу';
+              statusDiv.textContent = 'Extenstion не полностью инициализировался. Перезагрузите страницу "Ctrl+R"';
               statusDiv.className = 'status disabled';
               toggleBtn.disabled = true;
               toggleBtn.classList.remove('enable', 'disable');
