@@ -59,7 +59,6 @@ const TargetPlayerMonitor = {
   addNewTrackedSeats() {
     // Используем цвет из конфига
     this.trackedSeats = new Map();
-    if (targetColors.size === 0) {
     const allProfileNames = document.querySelectorAll('div.profileName[style*="border"]');
     const matchingPlayers = new Array();
     const targetColors = SeatMonitorConfig.selectedTargetColors;
