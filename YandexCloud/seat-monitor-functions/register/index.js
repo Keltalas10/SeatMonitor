@@ -1,7 +1,7 @@
 // Yandex Cloud Function: Register
 // Регистрация устройства по UUID
 
-const { initYdbClient, ensureTableExists } = require('./shared/ydb-client');
+const { initYdbClient } = require('./shared/ydb-client');
 const { isValidUUID, createResponse, handleOptions, generateToken } = require('./shared/utils');
 const { TypedValues } = require('ydb-sdk');
 
@@ -41,8 +41,14 @@ exports.handler = async (event, context) => {
       });
     }
 
-    const { deviceUUID } = body;
-
+    const { deviceUUID, version } = body;
+    const lastVersion = process.env.LAST_VERSION;
+    if (lastVersion !== version) {
+      return createResponse(400, {
+        success: false,
+        error: 'Ваша версия extionsion не совпадает с последеной ' + lastVersion
+      });
+    }
     // Валидация UUID
     if (!deviceUUID) {
       return createResponse(400, {
@@ -53,7 +59,6 @@ exports.handler = async (event, context) => {
 
     // Инициализация клиента YDB
     await initYdbClient();
-    await ensureTableExists();
 
     // Проверка, существует ли уже пользователь
     const driver = await initYdbClient();

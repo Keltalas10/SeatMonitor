@@ -84,38 +84,7 @@ async function initYdbClient() {
   }
 }
 
-
-/**
- * Создать таблицу users, если её нет
- */
-async function ensureTableExists() {
-  try {
-    const driverInstance = await initYdbClient();
-
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS users (
-        deviceUUID Utf8 NOT NULL,
-        subscriptionEndDate Utf8,
-        token Utf8,
-        loginTime Utf8,
-        registeredAt Utf8,
-        PRIMARY KEY (deviceUUID)
-      );
-    `;
-
-    await driverInstance.tableClient.withSession(async (session) => {
-      await session.executeSchemeQuery(createTableQuery);
-    });
-
-    console.log('[YDB] Таблица users проверена/создана');
-  } catch (error) {
-    console.error('[YDB] Ошибка создания таблицы:', error);
-    // Не бросаем ошибку, так как таблица может уже существовать
-  }
-}
-
 module.exports = {
-  initYdbClient,
-  ensureTableExists
+  initYdbClient
 };
 

@@ -8,6 +8,7 @@ const Auth = {
   // Константы
   SESSION_DURATION_DAYS: 1,
   UUID_STORAGE_KEY: 'deviceUUID',
+  EXTENSION_VERSION: "1.26",
 
   /**
    * Генерация UUID v4
@@ -61,7 +62,7 @@ const Auth = {
           const response = await fetch(`${this.apiUrl}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceUUID })
+            body: JSON.stringify({ deviceUUID, version: this.EXTENSION_VERSION })
           });
 
           const data = await response.json();
@@ -143,7 +144,7 @@ const Auth = {
           const response = await fetch(`${this.apiUrl}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceUUID })
+            body: JSON.stringify({ deviceUUID, version: this.EXTENSION_VERSION })
           });
 
           const data = await response.json();
@@ -174,7 +175,6 @@ const Auth = {
           }
         } catch (fetchError) {
           console.error('[Auth] Ошибка запроса к API:', fetchError);
-          // Fallback на локальный логин
         }
       }
 
@@ -207,9 +207,6 @@ const Auth = {
     }
   },
 
-  /**
-   * Выход пользователя (очистка сессии, но UUID остается)
-   */
   async logout() {
     try {
       await chrome.storage.local.remove(['authSession', 'authUser']);
