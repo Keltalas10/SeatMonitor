@@ -1,0 +1,60 @@
+openapi: 3.0.0
+info:
+  title: Seat Monitor API
+  version: 1.0.0
+servers:
+- url: https://d5daknevq1vgram63gsk.laqt4bj7.apigw.yandexcloud.net
+paths:
+  /register:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "chrome-extension://npkjfegjbblidmckniblcaopmeolobml"
+          Access-Control-Allow-Methods: "POST, OPTIONS"
+          Access-Control-Allow-Headers: "Content-Type, Authorization"
+          Access-Control-Max-Age: "86400"
+        content:
+          application/json: "{}"
+      responses:
+        '200':
+          description: CORS preflight
+    
+    post:
+      summary: Регистрация устройства
+      operationId: register
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4egg3mcqv3mtg5ut1ep
+        service_account_id: ajel0v3trdetq9qekb9d
+      responses:
+        '200':
+          description: Успешная регистрация
+
+  /login:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "chrome-extension://npkjfegjbblidmckniblcaopmeolobml"
+          Access-Control-Allow-Methods: "POST, OPTIONS"
+          Access-Control-Allow-Headers: "Content-Type, Authorization"
+          Access-Control-Max-Age: "86400"
+        content:
+          application/json: "{}"
+      responses:
+        '200':
+          description: CORS preflight
+    
+    post:
+      summary: Вход устройства
+      operationId: login
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4en1n3hphq3trvkfgp8
+        service_account_id: ajel0v3trdetq9qekb9d
+      responses:
+        '200':
+          description: Успешный вход

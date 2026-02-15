@@ -1,0 +1,29 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  version: 1.0.0
+servers:
+- url: https://d5d6sqot3a11trmsqsne.trruwy79.apigw.yandexcloud.net
+paths:
+  /register:
+    post:
+      summary: Регистрация устройства
+      operationId: register
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4egg3mcqv3mtg5ut1ep
+        service_account_id: ajel0v3trdetq9qekb9d
+      responses:
+        '200':
+          description: Успешная регистрация
+  /login:
+    post:
+      summary: Вход устройства
+      operationId: login
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4en1n3hphq3trvkfgp8
+        service_account_id: ajel0v3trdetq9qekb9d
+      responses:
+        '200':
+          description: Успешный вход
