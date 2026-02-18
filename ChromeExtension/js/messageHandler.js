@@ -24,12 +24,6 @@ const MessageHandler = {
           console.log('[MessageHandler] Обработка getStatus');
           this._handleGetStatus(sendResponse);
           break;
-        case 'getMode':
-          this._handleGetMode(sendResponse);
-          break;
-        case 'setMode':
-          this._handleSetMode(request.mode, sendResponse);
-          break;
         case 'setTargetColor':
           this._handleSetTargetColor(request.color, sendResponse);
           break;
@@ -169,7 +163,6 @@ const MessageHandler = {
     const stats = SeatMonitor.getStats();
     const response = {
       ...stats,
-      mode: SeatMonitorConfig.mode || 'first-available'
     };
     console.log('[MessageHandler] Отправка ответа:', response);
     sendResponse(response);
@@ -258,48 +251,6 @@ const MessageHandler = {
       console.error('[MessageHandler] Ошибка при проверке подписки:', error);
       return false;
     }
-  },
-
-  /**
-   * Обрабатывает запрос текущего режима
-   * @private
-   */
-  _handleGetMode(sendResponse) {
-    sendResponse({
-      mode: SeatMonitorConfig.mode || 'first-available'
-    });
-  },
-
-  /**
-   * Обрабатывает изменение режима
-   * @private
-   */
-  async _handleSetMode(mode, sendResponse) {
-    if (mode !== 'first-available' && mode !== 'target-players') {
-      sendResponse({ success: false, error: 'Неверный режим' });
-      return;
-    }
-
-    SeatMonitorConfig.mode = mode;
-
-    // Сохраняем режим в storage
-    try {
-      await chrome.storage.local.set({ monitorMode: mode });
-    } catch (error) {
-      console.error('[MessageHandler] Ошибка при сохранении режима:', error);
-    }
-
-    // Если мониторинг включен, перезапускаем его с новым режимом
-    if (SeatMonitorConfig.enabled) {
-      SeatMonitor.stop();
-      SeatMonitor.start();
-    }
-
-    if (SeatMonitorConfig.logActions) {
-      console.log(`[MessageHandler] Режим изменен на: ${mode}`);
-    }
-
-    sendResponse({ success: true, mode: mode });
   },
 
   /**

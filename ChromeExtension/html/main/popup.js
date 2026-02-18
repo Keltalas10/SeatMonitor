@@ -1,6 +1,24 @@
 // Popup script для управления расширением
 
 document.addEventListener('DOMContentLoaded', async function () {
+  const activationWrapper = document.getElementById('activationWrapper');
+  const activateBtn = document.getElementById('activateBtn');
+  const activationKeyInput = document.getElementById('activationKeyInput');
+  const monitorOptionsWrapper = document.getElementById('monitorOptionsWrapper');
+  const statusDiv = document.getElementById('status');
+  const monitorBtn = document.getElementById('toggleBtn');
+  const monitorInfo = document.getElementById('monitorInfo');
+  const colorSelectWrapper = document.getElementById('colorSelectWrapper');
+  const checkIntervalInput = document.getElementById('checkIntervalInput');
+  const seatTimeoutInput = document.getElementById('seatTimeoutInput');
+  const isSeat = document.getElementById('isSeat');
+  const vpipInput = document.getElementById('vpipInput');
+  const vpipCheckbox = document.getElementById('vpipCheckbox');
+  const stackInput = document.getElementById('stackInput');
+  const buyInInput = document.getElementById('buyInInput');
+  const stackCheckbox = document.getElementById('stackCheckbox');
+  const subscriptionDateDiv = document.getElementById('subscriptionDate');
+
   // Проверка, что Auth загружен
   if (typeof Auth === 'undefined') {
     console.error('[Popup] Ошибка: Auth не загружен. Проверьте путь к auth.js');
@@ -10,40 +28,26 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   // Проверка авторизации и обновление подписки при необходимости
-  const isAuth = await Auth.checkAuth();
-  if (!isAuth) {
-    // Если не авторизован, пытаемся зарегистрироваться автоматически
-    const registerResult = await Auth.register();
-    if (!registerResult.success) {
-      console.error('[Popup] Ошибка регистрации:', registerResult.error);
-    }
+  const accountData = await Auth.getAccountData();
+  if (accountData.token === undefined || accountData.key === undefined) {
+    activationWrapper.style.display = 'flex';
+    monitorOptionsWrapper.style.display = 'none';
   } else {
-    // Проверяем, нужно ли обновить подписку (если она истекла или отсутствует)
-    const shouldRefresh = await Auth.shouldRefreshSubscription();
-    if (shouldRefresh) {
-      const authResult = await Auth.login();
-      if (!authResult.success) {
-        console.error('[Popup] Ошибка обновления подписки:', authResult.error);
-      }
-    }
-  }
-
-  // Получаем данные устройства
-  const device = await Auth.getUser();
-  if (device) {
+    activationWrapper.style.display = 'none';
+    monitorOptionsWrapper.style.display = 'flex';
     // Отображаем информацию об устройстве
     const userInfoDiv = document.getElementById('userInfo');
     const userEmailSpan = document.getElementById('userEmail');
-    const subscriptionDateDiv = document.getElementById('subscriptionDate');
+
 
     userInfoDiv.style.display = 'block';
     // Показываем короткую версию UUID (первые 8 символов)
-    const shortUUID = device.deviceUUID ? device.deviceUUID.substring(0, 8) + '...' : 'Неизвестно';
+    const shortUUID = accountData.key;
     userEmailSpan.textContent = `ID: ${shortUUID}`;
 
     // Отображаем дату окончания подписки
-    if (device.subscriptionEndDate) {
-      const endDate = new Date(device.subscriptionEndDate);
+    if (accountData.subscriptionEndDate) {
+      const endDate = new Date(accountData.subscriptionEndDate);
       const now = new Date();
 
       // Устанавливаем время на начало дня для сравнения
@@ -63,25 +67,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   }
 
-  const statusDiv = document.getElementById('status');
-  const toggleBtn = document.getElementById('toggleBtn');
-  const monitorInfo = document.getElementById('monitorInfo');
-  const modeSelect = document.getElementById('modeSelect');
-  const colorSelectContainer = document.getElementById('colorSelectContainer');
-  const colorSelectWrapper = document.getElementById('colorSelectWrapper');
-  const checkIntervalInput = document.getElementById('checkIntervalInput');
-  const seatTimeoutInput = document.getElementById('seatTimeoutInput');
-  const isSeat = document.getElementById('isSeat');
-  const vpipContainer = document.getElementById('vpipContainer');
-  const vpipInput = document.getElementById('vpipInput');
-  const vpipCheckbox = document.getElementById('vpipCheckbox');
-  const stackContainer = document.getElementById('stackContainer');
-  const stackInput = document.getElementById('stackInput');
-  const buyInInput = document.getElementById('buyInInput');
-  const stackCheckbox = document.getElementById('stackCheckbox');
-  let enabled = false;
-  let isModeChanging = false; // Флаг, что пользователь меняет режим
 
+  let enabled = false;
   // Инициализация dropdown цветов
   function initColorSelect() {
     // Проверяем, что config загружен
@@ -261,24 +248,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // Показ/скрытие dropdown цветов в зависимости от режима
-  function updateColorSelectVisibility() {
-    if (modeSelect.value === 'target-players') {
-      colorSelectContainer.style.display = 'block';
-      vpipContainer.style.display = 'flex'
-      stackContainer.style.display = 'flex'
-    } else {
-      colorSelectContainer.style.display = 'none';
-      vpipContainer.style.display = 'none';
-      stackContainer.style.display = 'none';
-    }
-  }
-
   // Инициализация dropdown цветов
   initColorSelect();
 
   // Загрузка текущего режима и интервала из storage
-  chrome.storage.local.get(['monitorMode',
+  chrome.storage.local.get([
     'checkInterval',
     'seatTimeout',
     'isSeat',
@@ -287,10 +261,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     'vpipStatus',
     'vpipValue',
     'buyInValue'], function (result) {
-      if (result.monitorMode !== undefined) {
-        modeSelect.value = result.monitorMode;
-        updateColorSelectVisibility();
-      }
       if (result.checkInterval !== undefined) {
         checkIntervalInput.value = result.checkInterval / 1000;
       }
@@ -375,40 +345,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
       }
     });
-
-  // Обработчик изменения режима
-  modeSelect.addEventListener('change', function () {
-    const selectedMode = modeSelect.value;
-    isModeChanging = true; // Устанавливаем флаг
-
-    // Обновляем видимость dropdown цветов
-    updateColorSelectVisibility();
-
-    // Сохраняем в storage
-    chrome.storage.local.set({ monitorMode: selectedMode });
-
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'setMode', mode: selectedMode }, function (response) {
-          if (chrome.runtime.lastError) {
-            console.error('[Popup] Ошибка при изменении режима:', chrome.runtime.lastError);
-            isModeChanging = false;
-          } else if (response && response.success) {
-            console.log('[Popup] Режим изменен на:', selectedMode);
-            // Сбрасываем флаг через небольшую задержку
-            setTimeout(() => {
-              isModeChanging = false;
-            }, 1000);
-            updateStatus();
-          } else {
-            isModeChanging = false;
-          }
-        });
-      } else {
-        isModeChanging = false;
-      }
-    });
-  });
 
   isSeat.addEventListener('change', function () {
     chrome.storage.local.set({ isSeat: isSeat.checked });
@@ -571,8 +507,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log('[Popup] Нет активной вкладки');
         statusDiv.textContent = 'Нет активной вкладки';
         statusDiv.className = 'status disabled';
-        toggleBtn.disabled = true;
-        toggleBtn.classList.remove('enable', 'disable');
+        monitorBtn.disabled = true;
+        monitorBtn.classList.remove('enable', 'disable');
         return;
       }
 
@@ -584,8 +520,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log('[Popup] Вкладка не на правильном домене');
         statusDiv.textContent = 'Откройте страницу game.r-gaming.com';
         statusDiv.className = 'status disabled';
-        toggleBtn.disabled = true;
-        toggleBtn.classList.remove('enable', 'disable');
+        monitorBtn.disabled = true;
+        monitorBtn.classList.remove('enable', 'disable');
         return;
       }
 
@@ -599,8 +535,8 @@ document.addEventListener('DOMContentLoaded', async function () {
           console.log('[Popup] Таймаут ожидания ответа (3 секунды)');
           statusDiv.textContent = 'Нет ответа от страницы. Перезагрузите страницу "Ctrl+R';
           statusDiv.className = 'status disabled';
-          toggleBtn.disabled = true;
-          toggleBtn.classList.remove('enable', 'disable');
+          monitorBtn.disabled = true;
+          monitorBtn.classList.remove('enable', 'disable');
         }
       }, 3000);
 
@@ -620,13 +556,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (errorMsg && (errorMsg.includes('Could not establish connection') || errorMsg.includes('Receiving end does not exist'))) {
               statusDiv.textContent = 'Extenstion не полностью инициализировался. Перезагрузите страницу "Ctrl+R"';
               statusDiv.className = 'status disabled';
-              toggleBtn.disabled = true;
-              toggleBtn.classList.remove('enable', 'disable');
+              monitorBtn.disabled = true;
+              monitorBtn.classList.remove('enable', 'disable');
             } else {
               statusDiv.textContent = `Ошибка подключения: ${errorMsg}`;
               statusDiv.className = 'status disabled';
-              toggleBtn.disabled = true;
-              toggleBtn.classList.remove('enable', 'disable');
+              monitorBtn.disabled = true;
+              monitorBtn.classList.remove('enable', 'disable');
             }
             return;
           }
@@ -634,8 +570,8 @@ document.addEventListener('DOMContentLoaded', async function () {
           if (!response) {
             statusDiv.textContent = 'Нет ответа от страницы';
             statusDiv.className = 'status disabled';
-            toggleBtn.disabled = true;
-            toggleBtn.classList.remove('enable', 'disable');
+            monitorBtn.disabled = true;
+            monitorBtn.classList.remove('enable', 'disable');
             return;
           }
 
@@ -643,8 +579,8 @@ document.addEventListener('DOMContentLoaded', async function () {
           if (response.requiresAuth) {
             statusDiv.textContent = '⚠️ Требуется авторизация';
             statusDiv.className = 'status disabled';
-            toggleBtn.disabled = true;
-            toggleBtn.classList.remove('enable', 'disable');
+            monitorBtn.disabled = true;
+            monitorBtn.classList.remove('enable', 'disable');
             return;
           }
 
@@ -652,50 +588,40 @@ document.addEventListener('DOMContentLoaded', async function () {
           if (response.requiresSubscription) {
             statusDiv.textContent = '⚠️ Требуется активная подписка';
             statusDiv.className = 'status disabled';
-            toggleBtn.disabled = true;
-            toggleBtn.classList.remove('enable', 'disable');
+            monitorBtn.disabled = true;
+            monitorBtn.classList.remove('enable', 'disable');
             return;
           }
 
           enabled = response.enabled;
           statusDiv.textContent = enabled ? '✅ Мониторинг включен' : '❌ Мониторинг выключен';
           statusDiv.className = enabled ? 'status enabled' : 'status disabled';
-          toggleBtn.textContent = enabled ? 'Выключить' : 'Включить';
-          toggleBtn.disabled = false;
+          monitorBtn.textContent = enabled ? 'Выключить' : 'Включить';
+          monitorBtn.disabled = false;
 
           // Обновляем классы кнопки в зависимости от текста
-          toggleBtn.classList.remove('enable', 'disable');
-          if (toggleBtn.textContent === 'Включить') {
-            toggleBtn.classList.add('enable');
-          } else if (toggleBtn.textContent === 'Выключить') {
-            toggleBtn.classList.add('disable');
+          monitorBtn.classList.remove('enable', 'disable');
+          if (monitorBtn.textContent === 'Включить') {
+            monitorBtn.classList.add('enable');
+          } else if (monitorBtn.textContent === 'Выключить') {
+            monitorBtn.classList.add('disable');
           }
 
-          // Обновляем режим, если он изменился (но не если пользователь только что его менял)
-          if (response.mode && modeSelect.value !== response.mode && !isModeChanging) {
-            modeSelect.value = response.mode;
-            // Сохраняем в storage
-            chrome.storage.local.set({ monitorMode: response.mode });
-            updateColorSelectVisibility();
-          }
-
-          // Отображаем информацию о режиме
-          const modeText = response.mode === 'target-players' ? 'Отслеживание игроков' : 'Первое место';
-          monitorInfo.textContent = enabled ? `Активен (${modeText})` : 'Остановлен';
+          monitorInfo.textContent = enabled ? `Активен Отслеживание игроков` : 'Остановлен';
         });
       } catch (error) {
         console.error('[Popup] Ошибка при отправке сообщения:', error);
         statusDiv.textContent = 'Ошибка отправки сообщения: ' + error.message;
         statusDiv.className = 'status disabled';
-        toggleBtn.disabled = true;
-        toggleBtn.classList.remove('enable', 'disable');
+        monitorBtn.disabled = true;
+        monitorBtn.classList.remove('enable', 'disable');
         clearTimeout(timeoutId);
       }
     });
   }
 
   // Переключение мониторинга
-  toggleBtn.addEventListener('click', function () {
+  monitorBtn.addEventListener('click', function () {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, { action: 'toggle' }, function (response) {
         if (chrome.runtime.lastError) {
@@ -722,8 +648,32 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
+  activateBtn.addEventListener('click', function () {
+    Auth.register(activationKeyInput.value)
+      .then(registerResult => {
+        if (!registerResult.success) {
+          statusDiv.textContent = registerResult.error;
+          statusDiv.className = 'status disabled';
+        }
+
+        Auth.login().then(
+          loginResult => {
+            if (loginResult.success) {
+
+              activationWrapper.style.display = 'none';
+              monitorOptionsWrapper.style.display = 'flex';
+            }
+          }
+        )
+
+      })
+      .catch(error => {
+        // Обработка ошибки
+        console.error('Ошибка регистрации:', error);
+      });
+  });
+
   // Обновление статуса сразу и затем каждые 2 секунды
   updateStatus();
-  setInterval(updateStatus, 2000);
 });
 

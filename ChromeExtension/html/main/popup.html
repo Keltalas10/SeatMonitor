@@ -104,7 +104,6 @@
       padding: 10px;
       background-color: #f8f9fa;
       border-radius: 5px;
-      font-size: 12px;
       color: #666;
     }
 
@@ -161,81 +160,81 @@
 
 <body>
   <h1>🎯 Seat Monitor</h1>
-
   <div id="status" class="status">
     Инициализация...
   </div>
-
-  <div class="info" style="margin-bottom: 15px;">
-    <strong>Режим мониторинга:</strong>
-    <select id="modeSelect"
-      style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc;">
-      <option value="target-players">Отслеживание целевых игроков</option>
-      <option value="first-available">Первое свободное место</option>
-    </select>
-    <div id="colorSelectContainer" style="display: none; margin-top: 10px;">
-      <strong>Цвет маркировки игрока:</strong>
-      <div id="colorSelectWrapper"
-        style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"></div>
-    </div>
-    <div style="display: flex;  flex-direction: row; margin-top: 10px;">
-      <div style="display: none;">
-        <strong>Частота проверки (с):</strong>
-        <input type="number" id="checkIntervalInput" min="0.1" max="10" step="0.1"
+  <div id="activationWrapper" style="display: flex; flex-direction: column;">
+    <input type="text" id="activationKeyInput"
+      style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+    <button id="activateBtn" class="toggle">Активировать</button>
+  </div>
+  <div id="monitorOptionsWrapper" style="display: flex; flex-direction: column;">
+    <div class="info" style="margin-bottom: 15px; ">
+      <strong style="font-size: 16px;">Отслеживание целевых игроков:</strong>
+      <div id="colorSelectContainer" style="display: none; margin-top: 10px;">
+        <strong>Цвет маркировки игрока:</strong>
+        <div id="colorSelectWrapper"
+          style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"></div>
+      </div>
+      <div style="display: flex;  flex-direction: row; margin-top: 10px;">
+        <div style="display: none;">
+          <strong>Частота проверки (с):</strong>
+          <input type="number" id="checkIntervalInput" min="0.1" max="10" step="0.1"
+            style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+          <div style="font-size: 10px; color: #999; margin-top: 3px;">
+            Минимум: 0.1с, Максимум: 10с
+          </div>
+        </div>
+      </div>
+      <div id="vpipContainer"
+        style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
+        <strong>VPIP:</strong>
+        <input type="checkbox" id="vpipCheckbox" name="vpip" checked>
+        <input type="number" id="vpipInput" min="1" max="100" step="1"
+          style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+      </div>
+      <div id="stackContainer"
+        style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
+        <strong>Stack, BB:</strong>
+        <input type="checkbox" id="stackCheckbox" name="stack" checked>
+        <input type="number" id="stackInput" step="0.01"
+          style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+      </div>
+      <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
+        <strong>Садиться?:</strong>
+        <input type="checkbox" id="isSeat" name="isSeat">
+        <div style="display: none;">
+          <strong>Пауза перед подкой (с):</strong>
+          <input type="number" id="seatTimeoutInput" min="1" max="10" step="0.1"
+            style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+          <div style="font-size: 10px; color: #999; margin-top: 3px;">
+            Минимум: 1с, Максимум: 10с
+          </div>
+        </div>
+      </div>
+      <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
+        <strong>Buy-In, BB:</strong>
+        <input type="number" id="buyInInput" min="10" max="10000" step="5" value="50"
           style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
         <div style="font-size: 10px; color: #999; margin-top: 3px;">
-          Минимум: 0.1с, Максимум: 10с
+          Минимум: 10BB, Максимум: 10000BB
         </div>
       </div>
     </div>
-    <div id="vpipContainer"
-      style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
-      <strong>VPIP:</strong>
-      <input type="checkbox" id="vpipCheckbox" name="vpip" checked>
-      <input type="number" id="vpipInput" min="1" max="100" step="1"
-        style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
+
+    <button id="toggleBtn" class="toggle" disabled>Включить</button>
+
+    <div class="info">
+      <strong>Мониторинг:</strong> <span id="monitorInfo">-</span>
     </div>
-    <div id="stackContainer"
-      style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
-      <strong>Stack, BB:</strong>
-      <input type="checkbox" id="stackCheckbox" name="stack" checked>
-      <input type="number" id="stackInput" step="0.01"
-        style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
-    </div>
-    <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
-      <strong>Садиться?:</strong>
-      <input type="checkbox" id="isSeat" name="isSeat">
-      <div style="display: none;">
-        <strong>Пауза перед подкой (с):</strong>
-        <input type="number" id="seatTimeoutInput" min="1" max="10" step="0.1"
-          style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
-        <div style="font-size: 10px; color: #999; margin-top: 3px;">
-          Минимум: 1с, Максимум: 10с
-        </div>
+
+    <div class="user-info" id="userInfo" style="display: none;">
+      <strong>Устройство:</strong> <span id="userEmail">-</span>
+      <div class="subscription-date" id="subscriptionDate">
+        Подписка: не установлена
       </div>
+
     </div>
-    <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
-      <strong>Buy-In, BB:</strong>
-      <input type="number" id="buyInInput" min="10" max="10000" step="5" value="50"
-        style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
-      <div style="font-size: 10px; color: #999; margin-top: 3px;">
-        Минимум: 10BB, Максимум: 10000BB
-      </div>
-    </div>
-  </div>
-
-  <button id="toggleBtn" class="toggle" disabled>Включить</button>
-
-  <div class="info">
-    <strong>Мониторинг:</strong> <span id="monitorInfo">-</span>
-  </div>
-
-  <div class="user-info" id="userInfo" style="display: none;">
-    <strong>Устройство:</strong> <span id="userEmail">-</span>
-    <div class="subscription-date" id="subscriptionDate">
-      Подписка: не установлена
-    </div>
-
   </div>
 
   <div class="telegram-info">

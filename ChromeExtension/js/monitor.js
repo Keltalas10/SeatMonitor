@@ -73,10 +73,7 @@ const SeatMonitor = {
       this.mutationObserver = null;
     }
 
-    // Очищаем отслеживаемые места в зависимости от режима
-    if (SeatMonitorConfig.mode === 'target-players' && typeof TargetPlayerMonitor !== 'undefined') {
-      TargetPlayerMonitor.trackedSeats.clear();
-    }
+    TargetPlayerMonitor.trackedSeats.clear();
 
     // Отключаем мониторинг в конфиге
     SeatMonitorConfig.enabled = false;
@@ -95,12 +92,7 @@ const SeatMonitor = {
     }
 
     try {
-      if (SeatMonitorConfig.mode === 'target-players') {
-        TargetPlayerMonitor.checkTargetPlayers();
-      } else {
-        // Режим first-available (по умолчанию)
-        AvailableMonitor.checkFirstAvailable();
-      }
+      TargetPlayerMonitor.checkTargetPlayers();
     } catch (e) {
       if (SeatMonitorConfig.logActions) {
         console.error(`[Seat Monitor] Ошибка при мониторинге:`, e);
