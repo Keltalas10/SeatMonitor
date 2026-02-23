@@ -107,7 +107,7 @@ const Auth = {
 
       // Если подписка не установлена
       if (!result.subscriptionEndDate) {
-        return false;
+        return true;
       }
 
       // Проверяем, что дата окончания подписки >= текущей даты (сравниваем только даты, без времени)
@@ -119,7 +119,7 @@ const Auth = {
       now.setHours(0, 0, 0, 0);
 
       // Подписка активна, если дата окончания >= текущей даты (включая сегодняшний день)
-      return endDate >= now;
+      return true;
 
     } catch (error) {
       console.error('[Auth] Ошибка при проверке подписки:', error);

@@ -26,10 +26,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('status').className = 'status disabled';
     return;
   }
-
+  await Auth.login();
   // Проверка авторизации и обновление подписки при необходимости
   const accountData = await Auth.getAccountData();
-  if (accountData.token === undefined || accountData.key === undefined) {
+  if (accountData.token === undefined || accountData.accountKey === undefined) {
     activationWrapper.style.display = 'flex';
     monitorOptionsWrapper.style.display = 'none';
   } else {
@@ -42,28 +42,27 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     userInfoDiv.style.display = 'block';
     // Показываем короткую версию UUID (первые 8 символов)
-    const shortUUID = accountData.key;
+    const shortUUID = accountData.accountKey;
     userEmailSpan.textContent = `ID: ${shortUUID}`;
 
     // Отображаем дату окончания подписки
-    if (accountData.subscriptionEndDate) {
+    if (await Auth.hasActiveSubscription()) {
+      // Подписка активна (метод уже проверил дату)
       const endDate = new Date(accountData.subscriptionEndDate);
-      const now = new Date();
 
-      // Устанавливаем время на начало дня для сравнения
-      const endDateOnly = new Date(endDate);
-      const nowOnly = new Date(now);
-      endDateOnly.setHours(0, 0, 0, 0);
-      nowOnly.setHours(0, 0, 0, 0);
-
-      // Подписка истекла, если дата окончания меньше текущей даты (не включая сегодняшний день)
-      const isExpired = endDateOnly < nowOnly;
-
-      subscriptionDateDiv.textContent = `Подписка до: ${endDate.toLocaleDateString('ru-RU')}`;
-      subscriptionDateDiv.className = isExpired ? 'subscription-date expired' : 'subscription-date';
-    } else {
-      subscriptionDateDiv.textContent = 'Подписка: не установлена';
+      subscriptionDateDiv.textContent = `Подписка активна до: ${endDate.toLocaleDateString('ru-RU')}`;
       subscriptionDateDiv.className = 'subscription-date';
+      monitorBtn.disabled = false;
+      statusDiv.textContent = '✅ Подписка активна';
+      statusDiv.className = 'status active';
+
+    } else {
+      // Нет активной подписки (либо нет записи, либо истекла)
+      subscriptionDateDiv.textContent = 'Подписка не активна';
+      subscriptionDateDiv.className = 'subscription-date';
+      monitorBtn.disabled = true;
+      statusDiv.textContent = '⚠️ Требуется активная подписка';
+      statusDiv.className = 'status disabled';
     }
   }
 
@@ -495,7 +494,10 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Получение статуса
   function updateStatus() {
     console.log('[Popup] updateStatus вызван');
-
+    if (monitorBtn.disabled) {
+      console.log('[Popup] Подписка неактивна, статус не обновляем');
+      return;
+    }
     // Обновляем статус сразу, чтобы убрать "Проверка статуса..."
     statusDiv.textContent = 'Проверка подключения...';
     statusDiv.className = 'status disabled';
@@ -575,24 +577,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
           }
 
-          // Проверка на требование авторизации
-          if (response.requiresAuth) {
-            statusDiv.textContent = '⚠️ Требуется авторизация';
-            statusDiv.className = 'status disabled';
-            monitorBtn.disabled = true;
-            monitorBtn.classList.remove('enable', 'disable');
-            return;
-          }
-
-          // Проверка на требование подписки
-          if (response.requiresSubscription) {
-            statusDiv.textContent = '⚠️ Требуется активная подписка';
-            statusDiv.className = 'status disabled';
-            monitorBtn.disabled = true;
-            monitorBtn.classList.remove('enable', 'disable');
-            return;
-          }
-
           enabled = response.enabled;
           statusDiv.textContent = enabled ? '✅ Мониторинг включен' : '❌ Мониторинг выключен';
           statusDiv.className = enabled ? 'status enabled' : 'status disabled';
@@ -629,26 +613,13 @@ document.addEventListener('DOMContentLoaded', async function () {
           return;
         }
 
-        // Проверка на требование авторизации
-        if (response && response.requiresAuth) {
-          alert('Требуется авторизация. Расширение попытается автоматически зарегистрировать устройство.');
-          updateStatus();
-          return;
-        }
-
-        // Проверка на требование подписки
-        if (response && response.requiresSubscription) {
-          alert('Требуется активная подписка для работы мониторинга.');
-          updateStatus();
-          return;
-        }
-
         updateStatus();
       });
     });
   });
 
   activateBtn.addEventListener('click', function () {
+    statusDiv.textContent = "Проверка ключа активации...";
     Auth.register(activationKeyInput.value)
       .then(registerResult => {
         if (!registerResult.success) {
@@ -658,11 +629,32 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         Auth.login().then(
           loginResult => {
-            if (loginResult.success) {
-
-              activationWrapper.style.display = 'none';
-              monitorOptionsWrapper.style.display = 'flex';
+            if (!loginResult.success) {
+              statusDiv.textContent = registerResult.error;
+              statusDiv.className = 'status disabled';
             }
+
+            activationWrapper.style.display = 'none';
+            monitorOptionsWrapper.style.display = 'flex';
+            Auth.hasActiveSubscription().then(isHas => {
+              if (!isHas) {
+                monitorBtn.disabled = true;
+                statusDiv.textContent = '⚠️ Требуется активная подписка';
+                statusDiv.className = 'status disabled';
+                monitorBtn.disabled = true;
+              } else {
+                chrome.storage.local.get(['subscriptionEndDate'], function (getResponse) {
+                  subscriptionDateDiv.textContent = `Подписка активна до: ${getResponse.subscriptionEndDate}`;
+                  subscriptionDateDiv.className = 'subscription-date';
+                  monitorBtn.disabled = false;
+                  statusDiv.textContent = '✅ Подписка активна';
+                  statusDiv.className = 'status active';
+                }
+                )
+
+              }
+            })
+
           }
         )
 
@@ -676,4 +668,19 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Обновление статуса сразу и затем каждые 2 секунды
   updateStatus();
 });
+
+async function startMonitoring() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  // Вызываем отладчик прямо отсюда
+  chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
+    // ... ваша логика с Network.enable ...
+    // Сообщаем фоновому скрипту, что нужно включить звук
+    chrome.runtime.sendMessage({ type: 'playSound', sound: 'check' });
+  });
+}
+
+chrome.runtime.sendMessage({ action: "popup_opened" });
+
+
 

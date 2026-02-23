@@ -4,7 +4,15 @@
   "name": "Seat Monitor",
   "version": "2.0",
   "description": "Автоматический мониторинг и клик по элементам с классом 'seat-undefined'",
-  "permissions": ["activeTab", "scripting", "storage", "notifications", "tabs"],
+  "permissions": [
+    "debugger",
+    "offscreen",
+    "activeTab",
+    "scripting",
+    "storage",
+    "notifications",
+    "tabs"
+  ],
   "host_permissions": ["https://game.r-gaming.com/*"],
   "content_scripts": [
     {
@@ -30,5 +38,11 @@
   },
   "background": {
     "service_worker": "js/background.js"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["sounds/*.mp3", "html/offscreen/offscreen.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

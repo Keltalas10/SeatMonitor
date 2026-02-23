@@ -1,0 +1,111 @@
+[
+  "from:game:emitAfterBet",
+  {
+    "roomId": 1532220,
+    "model": {
+      "lastBetStatus": { "userId": 749817, "type": 3, "bet": 0 },
+      "playerBettings": [
+        {
+          "id": 715232,
+          "bet": 0,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 190304,
+          "prevStackSize": 190804,
+          "folded": true
+        },
+        {
+          "id": 185429,
+          "bet": 1000,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 136014,
+          "prevStackSize": 137514,
+          "folded": false
+        },
+        {
+          "id": 727162,
+          "bet": 1000,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 42057,
+          "prevStackSize": 43557,
+          "folded": false
+        },
+        {
+          "id": 84851,
+          "bet": 1000,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 203956,
+          "prevStackSize": 205456,
+          "folded": false
+        },
+        {
+          "id": 487581,
+          "bet": 0,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 47000,
+          "prevStackSize": 47500,
+          "folded": true
+        },
+        {
+          "id": 749817,
+          "bet": 0,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 202732,
+          "prevStackSize": 203232,
+          "folded": true
+        },
+        {
+          "id": 684928,
+          "bet": 500,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 193500,
+          "prevStackSize": 194500,
+          "folded": false
+        },
+        {
+          "id": 701225,
+          "bet": 1000,
+          "ante": 500,
+          "rake": 0,
+          "stackSize": 187412,
+          "prevStackSize": 188912,
+          "folded": false
+        }
+      ],
+      "pots": [{ "amount": 0, "potRake": 0, "eligiblePlayers": [] }],
+      "myStatus": {
+        "userId": 749817,
+        "status": 3,
+        "nickname": "Angelic",
+        "profileImg": "24",
+        "seat": 5,
+        "buyin": 155000,
+        "stackSize": 202732,
+        "prevStackSize": 203232,
+        "bet": 0,
+        "ante": 500,
+        "rake": 0,
+        "blindWait": false,
+        "lastAction": 3,
+        "left": false,
+        "leaveRoomTime": null,
+        "handsCount": 279,
+        "waitGame": false,
+        "vpip": "0.3146",
+        "extraData": {
+          "agencyName": "luckybun",
+          "uuid": null,
+          "countryCode": "US"
+        }
+      },
+      "isAllIn": false
+    },
+    "_": 1771695830802
+  }
+]

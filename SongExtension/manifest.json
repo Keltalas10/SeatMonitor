@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Song Replacer",
+  "version": "1.0",
+  "description": "Альтернативное звуковое сопровождение",
+  "permissions": [
+    "debugger",
+    "activeTab",
+    "scripting",
+    "storage",
+    "notifications",
+    "tabs",
+    "offscreen"
+  ],
+  "host_permissions": ["https://game.r-gaming.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://game.r-gaming.com/*"],
+      "js": [
+        "js/config.js",
+        "js/auth.js",
+        "js/monitor.js",
+        "js/messageHandler.js",
+        "js/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {},
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["sounds/*.mp3", "html/offscreen/offscreen.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

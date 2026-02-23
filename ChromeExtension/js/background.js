@@ -1,5 +1,118 @@
-// Background Service Worker для обработки уведомлений
+// Обработчик сообщений от content script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "popup_opened") {
+    // 1. Получаем активную вкладку, так как в sender.tab для popup пусто
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (!activeTab) return;
 
+      const targetTabId = activeTab.id;
+
+      // 2. Подключаем debugger
+      chrome.debugger.attach({ tabId: targetTabId }, "1.3", () => {
+        if (chrome.runtime.lastError) {
+          console.error("Ошибка подключения:", chrome.runtime.lastError.message);
+          return;
+        }
+
+        console.log(`Отладчик подключен к вкладке ${targetTabId}`);
+        chrome.debugger.sendCommand({ tabId: targetTabId }, "Network.enable", () => {
+          // Воспроизводим звук подключения ПОСЛЕ включения Network
+          playSound('check', 0.5);
+        });
+      });
+    });
+
+    return true; // Держим канал открытым для асинхронности
+  }
+  if (request.action === 'showBuyInNotification') {
+    showBuyInNotification(sender.tab?.id);
+    sendResponse({ success: true });
+  }
+  return true; // Асинхронный ответ
+});
+
+
+// Управление offscreen документом
+async function ensureOffscreenDocument() {
+  const existingContexts = await chrome.runtime.getContexts({});
+  const offscreenDocument = existingContexts.find(
+    context => context.contextType === 'OFFSCREEN_DOCUMENT'
+  );
+
+  if (!offscreenDocument) {
+    await chrome.offscreen.createDocument({
+      url: 'html/offscreen/offscreen.html',
+      reasons: ['AUDIO_PLAYBACK'],
+      justification: 'Воспроизведение звуков покера'
+    });
+  }
+}
+
+// Функция воспроизведения звука
+async function playSound(soundName, volume = 1.0) {
+  try {
+    await ensureOffscreenDocument();
+
+    await chrome.runtime.sendMessage({
+      type: 'playSound',
+      sound: soundName,
+      volume: volume
+    });
+
+    console.log(`Запрос на воспроизведение звука: ${soundName}`);
+  } catch (error) {
+    console.error('Ошибка воспроизведения звука:', error);
+  }
+}
+
+// Маппинг действий в названия звуков
+const actionToSound = {
+  1: 'check',
+  2: 'call',
+  3: 'fold',
+  4: 'raise',
+  5: 'all-in',
+  6: 'bet'
+};
+
+// Слушаем события
+chrome.debugger.onEvent.addListener((source, method, params) => {
+  if (method === "Network.webSocketFrameReceived") {
+    const jsonStartIndex = params.response.payloadData.indexOf('[');
+    if (jsonStartIndex !== -1) {
+      const jsonString = params.response.payloadData.substring(jsonStartIndex);
+      try {
+        const data = JSON.parse(jsonString);
+        console.log(jsonString);
+
+        // Обработка действий после ставки
+        if (data[0].includes("from:game:emitAfterBet")) {
+          const actionCode = data[1].model.lastAction;
+          const soundName = actionToSound[actionCode];
+
+          if (soundName) {
+            // Воспроизводим звук действия
+            playSound(soundName);
+            console.log(`Действие: ${soundName}`);
+          }
+        }
+
+        // Обработка смены раунда
+        if (data[0].includes("from:game:changeRound") &&
+          data[1].currentRound !== null) {
+          console.log(data[1].currentRound);
+
+          // Воспроизводим звук смены раунда
+          playSound('round', 0.8);
+        }
+
+      } catch (error) {
+        console.error('Ошибка парсинга:', error);
+      }
+    }
+  }
+});
 /**
  * Создает простую иконку для уведомления через canvas
  * @returns {Promise<string>} Data URL иконки
@@ -35,14 +148,7 @@ async function createNotificationIcon() {
   });
 }
 
-// Обработчик сообщений от content script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'showBuyInNotification') {
-    showBuyInNotification(sender.tab?.id);
-    sendResponse({ success: true });
-  }
-  return true; // Асинхронный ответ
-});
+
 
 /**
  * Показывает уведомление о клике на buy-in

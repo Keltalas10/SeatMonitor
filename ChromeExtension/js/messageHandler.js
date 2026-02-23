@@ -70,27 +70,6 @@ const MessageHandler = {
    */
   async _handleToggle(sendResponse) {
     // Проверка авторизации перед выполнением действий
-    const isAuth = await this._checkAuth();
-    if (!isAuth) {
-      sendResponse({
-        enabled: false,
-        error: 'Требуется авторизация',
-        requiresAuth: true
-      });
-      return;
-    }
-
-    // Проверка активной подписки перед включением мониторинга
-    const hasSubscription = await this._checkSubscription();
-    if (!hasSubscription && !SeatMonitorConfig.enabled) {
-      // Пытаемся включить мониторинг, но подписка неактивна
-      sendResponse({
-        enabled: false,
-        error: 'Требуется активная подписка для работы мониторинга',
-        requiresSubscription: true
-      });
-      return;
-    }
 
     const wasEnabled = SeatMonitorConfig.enabled;
 
@@ -99,16 +78,6 @@ const MessageHandler = {
       SeatMonitorConfig.enabled = false;
       SeatMonitor.stop();
       sendResponse({ enabled: false });
-      return;
-    }
-
-    // Если включаем - проверяем подписку еще раз
-    if (!hasSubscription) {
-      sendResponse({
-        enabled: false,
-        error: 'Требуется активная подписка для работы мониторинга',
-        requiresSubscription: true
-      });
       return;
     }
 
@@ -129,37 +98,6 @@ const MessageHandler = {
   async _handleGetStatus(sendResponse) {
     console.log('[MessageHandler] _handleGetStatus вызван');
 
-    // Проверка авторизации
-    const isAuth = await this._checkAuth();
-    console.log('[MessageHandler] Авторизация:', isAuth);
-
-    if (!isAuth) {
-      console.log('[MessageHandler] Отправка ответа: requiresAuth');
-      sendResponse({
-        enabled: false,
-        requiresAuth: true
-      });
-      return;
-    }
-
-    // Проверка подписки
-    const hasSubscription = await this._checkSubscription();
-    console.log('[MessageHandler] Подписка:', hasSubscription);
-
-    if (!hasSubscription) {
-      // Если подписка неактивна, но мониторинг включен - выключаем его
-      if (SeatMonitorConfig.enabled) {
-        SeatMonitorConfig.enabled = false;
-        SeatMonitor.stop();
-      }
-      console.log('[MessageHandler] Отправка ответа: requiresSubscription');
-      sendResponse({
-        enabled: false,
-        requiresSubscription: true
-      });
-      return;
-    }
-
     const stats = SeatMonitor.getStats();
     const response = {
       ...stats,
@@ -168,90 +106,6 @@ const MessageHandler = {
     sendResponse(response);
   },
 
-  /**
-   * Проверка авторизации
-   * @private
-   */
-  async _checkAuth() {
-    try {
-      // Используем Auth модуль, если доступен
-      if (typeof Auth !== 'undefined' && Auth.checkAuth) {
-        return await Auth.checkAuth();
-      }
-
-      // Fallback: проверка напрямую через storage
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        return false;
-      }
-
-      const result = await chrome.storage.local.get(['authSession']);
-
-      if (!result.authSession) {
-        return false;
-      }
-
-      const session = result.authSession;
-      const loginTime = new Date(session.loginTime);
-      const now = new Date();
-      const daysSinceLogin = (now - loginTime) / (1000 * 60 * 60 * 24);
-
-      // Проверка срока действия сессии (30 дней)
-      if (daysSinceLogin > 30) {
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('[MessageHandler] Ошибка при проверке авторизации:', error);
-      return false;
-    }
-  },
-
-  /**
-   * Проверка активной подписки
-   * @private
-   */
-  async _checkSubscription() {
-    try {
-      // Используем Auth модуль, если доступен
-      if (typeof Auth !== 'undefined' && Auth.hasActiveSubscription) {
-        return await Auth.hasActiveSubscription();
-      }
-
-      // Fallback: проверка напрямую через storage
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        return false;
-      }
-
-      const result = await chrome.storage.local.get(['authSession']);
-
-      if (!result.authSession) {
-        return false;
-      }
-
-      const session = result.authSession;
-      const subscriptionEndDate = session.subscriptionEndDate;
-
-      // Если подписка не установлена
-      if (!subscriptionEndDate) {
-        return false;
-      }
-
-      // Проверяем, что дата окончания подписки >= текущей даты (сравниваем только даты, без времени)
-      const endDate = new Date(subscriptionEndDate);
-      const now = new Date();
-
-      // Устанавливаем время на начало дня для сравнения
-      endDate.setHours(0, 0, 0, 0);
-      now.setHours(0, 0, 0, 0);
-
-      // Подписка активна, если дата окончания >= текущей даты (включая сегодняшний день)
-      return endDate >= now;
-    } catch (error) {
-      console.error('[MessageHandler] Ошибка при проверке подписки:', error);
-      return false;
-    }
-  },
 
   /**
    * Обрабатывает изменение цвета для целевых игроков

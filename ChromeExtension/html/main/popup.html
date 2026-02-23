@@ -161,7 +161,7 @@
 <body>
   <h1>🎯 Seat Monitor</h1>
   <div id="status" class="status">
-    Инициализация...
+    Введите Ключ Активации
   </div>
   <div id="activationWrapper" style="display: flex; flex-direction: column;">
     <input type="text" id="activationKeyInput"
@@ -171,7 +171,7 @@
   <div id="monitorOptionsWrapper" style="display: flex; flex-direction: column;">
     <div class="info" style="margin-bottom: 15px; ">
       <strong style="font-size: 16px;">Отслеживание целевых игроков:</strong>
-      <div id="colorSelectContainer" style="display: none; margin-top: 10px;">
+      <div id="colorSelectContainer" style="display: block; margin-top: 10px;">
         <strong>Цвет маркировки игрока:</strong>
         <div id="colorSelectWrapper"
           style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;"></div>
@@ -190,14 +190,14 @@
         style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
         <strong>VPIP:</strong>
         <input type="checkbox" id="vpipCheckbox" name="vpip" checked>
-        <input type="number" id="vpipInput" min="1" max="100" step="1"
+        <input type="number" id="vpipInput" min="1" max="100" step="1" value="50"
           style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
       </div>
       <div id="stackContainer"
         style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px; align-items: center;">
         <strong>Stack, BB:</strong>
         <input type="checkbox" id="stackCheckbox" name="stack" checked>
-        <input type="number" id="stackInput" step="0.01"
+        <input type="number" id="stackInput" step="0.01" value="50"
           style="padding: 5px; border-radius: 3px; border: 1px solid #ccc; box-sizing: border-box;">
       </div>
       <div style="display: flex;  flex-direction: row;  flex-wrap: wrap; position: relative; margin-top: 5px;">
