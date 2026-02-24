@@ -155,6 +155,57 @@
     .telegram-info .contact-line {
       margin: 3px 0;
     }
+
+    .toggle-switch {
+      margin: 10px 0;
+    }
+
+    .toggle-input {
+      display: none;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      padding-left: 50px;
+    }
+
+    .toggle-label:before {
+      content: '';
+      position: absolute;
+      left: 0;
+      width: 40px;
+      height: 20px;
+      background-color: #ccc;
+      border-radius: 20px;
+      transition: background-color 0.3s;
+    }
+
+    .toggle-label:after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .toggle-input:checked+.toggle-label:before {
+      background-color: #4CAF50;
+    }
+
+    .toggle-input:checked+.toggle-label:after {
+      transform: translateX(20px);
+    }
+
+    .toggle-text {
+      margin-left: 10px;
+      font-size: 14px;
+    }
   </style>
 </head>
 
@@ -169,6 +220,13 @@
     <button id="activateBtn" class="toggle">Активировать</button>
   </div>
   <div id="monitorOptionsWrapper" style="display: flex; flex-direction: column;">
+
+    <div class="toggle-switch">
+      <input type="checkbox" id="soundToggle" class="toggle-input">
+      <label for="soundToggle" class="toggle-label">
+        <span class="toggle-text">Звуки</span>
+      </label>
+    </div>
     <div class="info" style="margin-bottom: 15px; ">
       <strong style="font-size: 16px;">Отслеживание целевых игроков:</strong>
       <div id="colorSelectContainer" style="display: block; margin-top: 10px;">

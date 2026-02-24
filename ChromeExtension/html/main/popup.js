@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   const buyInInput = document.getElementById('buyInInput');
   const stackCheckbox = document.getElementById('stackCheckbox');
   const subscriptionDateDiv = document.getElementById('subscriptionDate');
+  const soundToggle = document.getElementById('soundToggle');
+  const toggleLabel = document.querySelector('.toggle-label');
 
   // Проверка, что Auth загружен
   if (typeof Auth === 'undefined') {
@@ -667,20 +669,25 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Обновление статуса сразу и затем каждые 2 секунды
   updateStatus();
+  // 2. Слушать изменения (когда пользователь кликает)
+  soundToggle.addEventListener('change', function (event) {
+    const isEnabled = event.target.checked;
+    if (isEnabled) {
+      console.log('🎵 Звуки включены');
+      // Ваш код для включения звуков
+      chrome.runtime.sendMessage({ action: 'onSounds' });
+    } else {
+      console.log('🔇 Звуки выключены');
+      // Ваш код для выключения звуков
+      chrome.runtime.sendMessage({ action: 'offSounds' });
+    }
+  });
 });
 
-async function startMonitoring() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  // Вызываем отладчик прямо отсюда
-  chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
-    // ... ваша логика с Network.enable ...
-    // Сообщаем фоновому скрипту, что нужно включить звук
-    chrome.runtime.sendMessage({ type: 'playSound', sound: 'check' });
-  });
-}
 
-chrome.runtime.sendMessage({ action: "popup_opened" });
+
+
 
 
 

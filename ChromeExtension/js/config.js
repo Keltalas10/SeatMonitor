@@ -15,5 +15,6 @@ const SeatMonitorConfig = {
   stackStatus: true,
   stackValue: 50,
   buyInBB: 50,
+  isOnSounds: false
 };
 

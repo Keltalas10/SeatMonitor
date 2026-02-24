@@ -9,12 +9,12 @@ const soundMap = {
   'round': 'sounds/round.mp3'
 };
 
-// Слушаем сообщения от background.js
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === 'playSound') {
     playSound(message.sound, message.volume || 1.0)
       .then(() => sendResponse({ success: true }))
       .catch(error => sendResponse({ success: false, error: error.message }));
+
     return true; // Асинхронный ответ
   }
 });

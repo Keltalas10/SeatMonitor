@@ -1,13 +1,16 @@
 // Обработчик сообщений от content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "popup_opened") {
-    // 1. Получаем активную вкладку, так как в sender.tab для popup пусто
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  if (request.action === "onSounds") {
+    // Сначала пробуем отсоединить, если было подключено
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const activeTab = tabs[0];
       if (!activeTab) return;
 
       const targetTabId = activeTab.id;
-
+      await chrome.debugger.detach({ tabId: targetTabId }).catch(() => {
+        // Ошибка означает, что не было подключено - игнорируем
+        console.log('Отладчик не был подключен, продолжаем...');
+      });
       // 2. Подключаем debugger
       chrome.debugger.attach({ tabId: targetTabId }, "1.3", () => {
         if (chrome.runtime.lastError) {
@@ -25,12 +28,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true; // Держим канал открытым для асинхронности
   }
+  if (request.action === "offSounds") {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const activeTab = tabs[0];
+      if (!activeTab) return;
+
+      const targetTabId = activeTab.id;
+
+      try {
+        // Проверяем, есть ли вообще отладчик на этой вкладке
+        const targets = await chrome.debugger.getTargets();
+        const isAttached = targets.some(t => t.tabId === targetTabId && t.attached);
+
+        if (!isAttached) {
+          console.log(`Отладчик не был подключен к вкладке ${targetTabId}`);
+          return;
+        }
+
+        // Пробуем отключить Network (может быть уже отключено)
+        try {
+          await chrome.debugger.sendCommand({ tabId: targetTabId }, "Network.disable");
+          console.log(`Network отключен для вкладки ${targetTabId}`);
+        } catch (e) {
+          console.log("Network уже был отключен");
+        }
+
+        // Отсоединяем отладчик
+        await chrome.debugger.detach({ tabId: targetTabId });
+        console.log(`Отладчик отсоединен от вкладки ${targetTabId}`);
+
+      } catch (error) {
+        console.error("Ошибка при отключении:", error);
+      }
+    });
+
+    return true;
+  }
   if (request.action === 'showBuyInNotification') {
     showBuyInNotification(sender.tab?.id);
     sendResponse({ success: true });
   }
   return true; // Асинхронный ответ
 });
+
 
 
 // Управление offscreen документом
@@ -79,38 +119,49 @@ const actionToSound = {
 // Слушаем события
 chrome.debugger.onEvent.addListener((source, method, params) => {
   if (method === "Network.webSocketFrameReceived") {
-    const jsonStartIndex = params.response.payloadData.indexOf('[');
-    if (jsonStartIndex !== -1) {
-      const jsonString = params.response.payloadData.substring(jsonStartIndex);
-      try {
-        const data = JSON.parse(jsonString);
-        console.log(jsonString);
+    chrome.tabs.get(source.tabId, (tab) => {
+      const windowId = tab.windowId;
 
-        // Обработка действий после ставки
-        if (data[0].includes("from:game:emitAfterBet")) {
-          const actionCode = data[1].model.lastAction;
-          const soundName = actionToSound[actionCode];
+      // Проверяем, активно ли это окно
+      chrome.windows.get(windowId, (window) => {
+        if (window.focused) {
 
-          if (soundName) {
-            // Воспроизводим звук действия
-            playSound(soundName);
-            console.log(`Действие: ${soundName}`);
+          const jsonStartIndex = params.response.payloadData.indexOf('[');
+          if (jsonStartIndex !== -1) {
+            const jsonString = params.response.payloadData.substring(jsonStartIndex);
+            try {
+              const data = JSON.parse(jsonString);
+
+              // Обработка действий после ставки
+              if (data[0].includes("from:game:emitAfterBet")) {
+                const actionCode = data[1].model.myStatus.lastAction;
+                const soundName = actionToSound[actionCode];
+
+                if (soundName) {
+                  // Воспроизводим звук действия
+                  playSound(soundName);
+                  console.log(`Действие: ${soundName}`);
+                }
+              }
+
+              // Обработка смены раунда
+              if (data[0].includes("from:game:changeRound") &&
+                data[1].currentRound !== null) {
+                console.log(data[1].currentRound);
+
+                // Воспроизводим звук смены раунда
+                playSound('round', 0.8);
+              }
+
+            } catch (error) {
+              console.log('Ошибка парсинга:', error);
+            }
           }
         }
-
-        // Обработка смены раунда
-        if (data[0].includes("from:game:changeRound") &&
-          data[1].currentRound !== null) {
-          console.log(data[1].currentRound);
-
-          // Воспроизводим звук смены раунда
-          playSound('round', 0.8);
-        }
-
-      } catch (error) {
-        console.error('Ошибка парсинга:', error);
       }
-    }
+      )
+
+    })
   }
 });
 /**
