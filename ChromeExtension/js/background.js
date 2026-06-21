@@ -1,4 +1,6 @@
 // Обработчик сообщений от content script
+
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "onSounds") {
     // Сначала пробуем отсоединить, если было подключено
@@ -67,6 +69,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'showBuyInNotification') {
     showBuyInNotification(sender.tab?.id);
     sendResponse({ success: true });
+  }
+
+  if (request.action === 'openPopup') {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      // Если нет tabId, пробуем открыть обычный popup
+      chrome.action.openPopup().catch(() => { });
+      sendResponse({ success: true });
+      return true;
+    }
+
+    chrome.action.openPopup()
+      .then(() => sendResponse({ success: true }))
+      .catch(error => {
+        // Fallback: открываем окно с tabId в URL
+        const url = chrome.runtime.getURL('html/main/popup.html') + `?tabId=${tabId}`;
+        chrome.windows.create({
+          url: url,
+          type: 'popup',
+          width: 400,
+          height: 600
+        }, () => sendResponse({ success: true, fallback: true }));
+      });
+    return true;
   }
   return true; // Асинхронный ответ
 });
