@@ -20,32 +20,14 @@ document.addEventListener('DOMContentLoaded', async function () {
   const subscriptionDateDiv = document.getElementById('subscriptionDate');
   const soundToggle = document.getElementById('soundToggle');
 
-  // --- Получаем tabId из URL (если окно открыто через fallback) ---
-  let targetTabId = null;
-  const urlParams = new URLSearchParams(window.location.search);
-  const tabIdParam = urlParams.get('tabId');
-  if (tabIdParam) {
-    targetTabId = parseInt(tabIdParam, 10);
-  }
-
-  // --- Функция получения целевой вкладки ---
   function getTargetTab(callback) {
-    if (targetTabId) {
-      chrome.tabs.get(targetTabId, (tab) => {
-        if (chrome.runtime.lastError || !tab) {
-          // fallback на активную вкладку текущего окна
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            callback(tabs[0] || null);
-          });
-        } else {
-          callback(tab);
-        }
-      });
-    } else {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        callback(tabs[0] || null);
-      });
-    }
+
+    // Если нет targetTabId, ищем все вкладки с нужным доменом
+    chrome.tabs.query({ url: '*://game.r-gaming.com/*' }, (tabs) => {
+      const activeTab = tabs.find(t => t.active);
+      callback(activeTab || tabs[0] || null);
+    });
+
   }
 
   // Проверка, что Auth загружен

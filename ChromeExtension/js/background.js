@@ -4,7 +4,7 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "onSounds") {
     // Сначала пробуем отсоединить, если было подключено
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+    chrome.tabs.query({ url: '*://game.r-gaming.com/*', active: true }, async (tabs) => {
       const activeTab = tabs[0];
       if (!activeTab) return;
 
@@ -84,7 +84,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(() => sendResponse({ success: true }))
       .catch(error => {
         // Fallback: открываем окно с tabId в URL
-        const url = chrome.runtime.getURL('html/main/popup.html') + `?tabId=${tabId}`;
+        const url = chrome.runtime.getURL('html/main/popup.html');
         chrome.windows.create({
           url: url,
           type: 'popup',
